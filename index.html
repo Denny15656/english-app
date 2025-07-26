@@ -123,7 +123,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "1.9";
+        const APP_VERSION = "2.5";
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -223,6 +223,7 @@
         
         function assignDomElements() {
              dom = {
+                appLoader: document.getElementById('app-loader'),
                 mainAppWrapper: document.getElementById('main-app-wrapper'),
                 userIdDisplay: document.getElementById('user-id-display'),
                 streakDisplay: document.getElementById('streak-display'),
@@ -287,6 +288,23 @@
             };
         }
         
+        function showScreen(screenName) {
+            ['mode-selection', 'custom-set-manager', 'set-detail-view', 'app-container', 'history-section'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden');
+            });
+
+            if (screenName === 'custom-set-manager' || screenName === 'set-detail-view') {
+                 document.getElementById(screenName).classList.remove('hidden');
+            } else {
+                document.getElementById('mode-selection').classList.remove('hidden');
+                document.getElementById('history-section').classList.remove('hidden');
+                if (screenName === 'quiz') {
+                    document.getElementById('app-container').classList.remove('hidden');
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             populateUI();
             assignDomElements();
@@ -389,57 +407,59 @@
         }
         
         async function initializeFirebase() {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            if (!firebaseConfig.apiKey) {
-                console.error("Firebase config is missing.");
-                document.body.innerHTML = `<div class="p-8 text-center text-red-500">設定エラー。アプリをロードできません。</div>`;
-                return;
-            }
-
             const appLoader = document.getElementById('app-loader');
-            if(!appLoader) { // Create if doesn't exist (robustness)
-                const loader = document.createElement('div');
-                loader.id = 'app-loader';
-                loader.className = 'fixed inset-0 bg-white flex flex-col justify-center items-center z-50 transition-opacity duration-300';
-                loader.innerHTML = `<div class="loader"></div><p class="mt-4 text-gray-600">アプリを準備しています...</p>`;
-                document.body.prepend(loader);
-            }
-            dom.mainAppWrapper.classList.add('hidden');
-
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    if(dom.userIdDisplay) dom.userIdDisplay.textContent = `ID: ${userId.substring(0, 8)}...`;
-                    
-                    await loadAllUserData();
-                    
-                    const loader = document.getElementById('app-loader');
-                    if (loader) {
-                        loader.classList.add('opacity-0');
-                        setTimeout(() => loader.remove(), 300);
-                    }
-                    dom.mainAppWrapper.classList.remove('hidden');
-                }
-            });
-
+            
             try {
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                // --- 重要：公開サイト用のFirebase設定 ---
+                const firebaseConfig = {
+                  apiKey: "YOUR_API_KEY",
+                  authDomain: "YOUR_AUTH_DOMAIN",
+                  projectId: "YOUR_PROJECT_ID",
+                  storageBucket: "YOUR_STORAGE_BUCKET",
+                  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                  appId: "YOUR_APP_ID"
+                };
+                
+                let finalConfig = {};
+                if (typeof __firebase_config !== 'undefined') {
+                    finalConfig = JSON.parse(__firebase_config);
+                } else {
+                    finalConfig = firebaseConfig;
+                }
+
+                if (!finalConfig.apiKey || finalConfig.apiKey.startsWith("YOUR_")) {
+                    throw new Error("Firebase設定が不完全です。");
+                }
+
+                app = initializeApp(finalConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        if(dom.userIdDisplay) dom.userIdDisplay.textContent = `ID: ${userId.substring(0, 8)}...`;
+                        await loadAllUserData();
+                        
+                        if (appLoader) {
+                            appLoader.classList.add('opacity-0');
+                            setTimeout(() => appLoader.remove(), 300);
+                        }
+                        dom.mainAppWrapper.classList.remove('hidden');
+                    }
+                });
+                
                 if (!auth.currentUser) {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
+                     if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
                         await signInAnonymously(auth);
                     }
                 }
+
             } catch (error) {
-                console.error("Authentication failed:", error);
-                const loader = document.getElementById('app-loader');
-                if(loader) loader.innerHTML = `<div class="text-center p-8 text-red-500">認証に失敗しました。アプリをロードできません。</div>`;
+                console.error("Initialization failed:", error);
+                if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold text-red-600 mb-4">設定が必要です</h2><p class="text-gray-700 mb-6">このアプリを公開サイトで動作させるには、あなた専用のデータベース(Firebase)設定が必要です。以下の手順で設定を完了してください。</p><ol class="text-left space-y-4"><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">1</span><div><a href="https://console.firebase.google.com/" target="_blank" class="font-bold text-blue-600 hover:underline">Firebaseコンソール</a>にアクセスし、新しいプロジェクトを作成します（無料）。</div></li><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">2</span><div>作成したプロジェクトで、「ウェブアプリを追加」(<code>&lt;/&gt;</code>アイコン)を選択し、表示された<code>firebaseConfig</code>コードをコピーします。</div></li><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">3</span><div>このHTMLファイルの<code>initializeFirebase</code>関数内にある<code>firebaseConfig</code>の部分を、コピーしたご自身のコードに置き換えて保存してください。</div></li></ol></div>`;
             }
         }
         
@@ -544,11 +564,15 @@
             };
         }
         function handleReadAloud() { if ('speechSynthesis' in window && dom.japaneseSentence) { const utterance = new SpeechSynthesisUtterance(dom.japaneseSentence.textContent); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance); } }
-        function getCollectionRef(collectionName) { if (!userId) throw new Error("User not authenticated"); const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`); }
+        function getCollectionRef(collectionName) { 
+            if (!userId) throw new Error("User not authenticated"); 
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`);
+        }
         
         async function loadAllUserData() {
             if (!userId) return;
-            const profileDocRef = doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'}/users/${userId}/profile/main`);
+            const profileDocRef = doc(getCollectionRef('profile'), 'main');
             const profileSnap = await getDoc(profileDocRef);
             updateStreak(profileSnap.exists() ? profileSnap.data() : null);
 
@@ -597,7 +621,23 @@
             const docRef = stats.id ? doc(getCollectionRef('questionStats'), stats.id) : doc(getCollectionRef('questionStats'));
             await setDoc(docRef, stats, { merge: true });
         }
-        async function updateStreak(profileData) { const now = new Date(); const todayStr = now.toISOString().split('T')[0]; const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1); const yesterdayStr = yesterday.toISOString().split('T')[0]; let streak = 1; if (profileData && profileData.lastLoginDate) { const lastLoginStr = profileData.lastLoginDate; if (lastLoginStr === todayStr) streak = profileData.streakCount || 1; else if (lastLoginStr === yesterdayStr) streak = (profileData.streakCount || 0) + 1; } dom.streakDisplay.classList.remove('hidden'); dom.streakCount.textContent = streak; const profileDocRef = doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'}/users/${userId}/profile/main`); await setDoc(profileDocRef, { streakCount: streak, lastLoginDate: todayStr }, { merge: true }); }
+        async function updateStreak(profileData) { 
+            const now = new Date(); 
+            const todayStr = now.toISOString().split('T')[0]; 
+            const yesterday = new Date(now); 
+            yesterday.setDate(now.getDate() - 1); 
+            const yesterdayStr = yesterday.toISOString().split('T')[0]; 
+            let streak = 1; 
+            if (profileData && profileData.lastLoginDate) { 
+                const lastLoginStr = profileData.lastLoginDate; 
+                if (lastLoginStr === todayStr) streak = profileData.streakCount || 1; 
+                else if (lastLoginStr === yesterdayStr) streak = (profileData.streakCount || 0) + 1; 
+            } 
+            dom.streakDisplay.classList.remove('hidden'); 
+            dom.streakCount.textContent = streak; 
+            const profileDocRef = doc(getCollectionRef('profile'), 'main'); 
+            await setDoc(profileDocRef, { streakCount: streak, lastLoginDate: todayStr }, { merge: true }); 
+        }
         
         function loadSettings() { 
             const savedSettings = localStorage.getItem('engApp.settings'); 
@@ -733,4 +773,4 @@
         }
     </script>
 </body>
-</ht
+</html>
