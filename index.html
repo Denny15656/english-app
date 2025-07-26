@@ -123,7 +123,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "2.5";
+        const APP_VERSION = "2.6";
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -412,16 +412,17 @@
             try {
                 // --- 重要：公開サイト用のFirebase設定 ---
                 const firebaseConfig = {
-                  apiKey: "YOUR_API_KEY",
-                  authDomain: "YOUR_AUTH_DOMAIN",
-                  projectId: "YOUR_PROJECT_ID",
-                  storageBucket: "YOUR_STORAGE_BUCKET",
-                  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-                  appId: "YOUR_APP_ID"
+                  apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
+                  authDomain: "english-app-e5b4d.firebaseapp.com",
+                  projectId: "english-app-e5b4d",
+                  storageBucket: "english-app-e5b4d.appspot.com",
+                  messagingSenderId: "482204446370",
+                  appId: "1:482204446370:web:cc50237afb7abedae531fb",
+                  measurementId: "G-XGBJ9S1RVT"
                 };
                 
                 let finalConfig = {};
-                if (typeof __firebase_config !== 'undefined') {
+                if (typeof __firebase_config !== 'undefined' && Object.keys(JSON.parse(__firebase_config)).length > 0) {
                     finalConfig = JSON.parse(__firebase_config);
                 } else {
                     finalConfig = firebaseConfig;
