@@ -123,7 +123,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.0";
+        const APP_VERSION = "3.2";
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -155,7 +155,7 @@
         let questionStats = new Map();
         let currentFilter = 'all';
         let activeSentences = [];
-        let recognition;
+        let recognition = null;
         let isRecognizing = false;
         let audioCtx;
         let customProblemSets = [];
@@ -384,7 +384,7 @@
             } catch(error) {
                  console.error("Initialization failed:", error);
                  const appLoader = document.getElementById('app-loader');
-                 if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold text-red-600 mb-4">設定が必要です</h2><p class="text-gray-700 mb-6">このアプリを公開サイトで動作させるには、あなた専用のデータベース(Firebase)設定が必要です。以下の手順で設定を完了してください。</p><ol class="text-left space-y-4"><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">1</span><div><a href="https://console.firebase.google.com/" target="_blank" class="font-bold text-blue-600 hover:underline">Firebaseコンソール</a>にアクセスし、新しいプロジェクトを作成します（無料）。</div></li><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">2</span><div>作成したプロジェクトで、「ウェブアプリを追加」(<code>&lt;/&gt;</code>アイコン)を選択し、表示された<code>firebaseConfig</code>コードをコピーします。</div></li><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">3</span><div>このHTMLファイルの<code>initializeFirebase</code>関数内にある<code>firebaseConfig</code>の部分を、コピーしたご自身のコードに置き換えて保存してください。</div></li></ol></div>`;
+                 if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold text-red-600 mb-4">設定が必要です</h2><p class="text-gray-700 mb-6">このアプリを公開サイトで動作させるには、あなた専用のデータベース(Firebase)設定が必要です。以下の手順で設定を完了してください。</p><ol class="text-left space-y-4"><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">1</span><div><a href="https://console.firebase.google.com/" target="_blank" class="font-bold text-blue-600 hover:underline">Firebaseコンソール</a>にアクセスし、新しいプロジェクトを作成します（無料）。</div></li><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">2</span><div>作成したプロジェクトで、「ウェブアプリを追加」(<code>&lt;/&gt;</code>アイコン)を選択し、表示された<code>firebaseConfig</code>コードをコピーします。</div></li><li class="flex items-start"><span class="bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 font-bold flex-shrink-0">3</span><div>このHTMLファイルの<code>initializeAppAndAuth</code>関数内にある<code>firebaseConfig</code>の部分を、コピーしたご自身のコードに置き換えて保存してください。</div></li></ol></div>`;
             }
         });
 
@@ -449,7 +449,13 @@
                         break;
                     }
                     case 'submit-btn': handleSubmit(); break;
-                    case 'mic-btn': if (recognition) isRecognizing ? recognition.stop() : recognition.start(); break;
+                    case 'mic-btn': 
+                         if (isRecognizing) {
+                            if(recognition) recognition.stop();
+                        } else {
+                            startNewRecognition();
+                        }
+                        break;
                     case 'read-aloud-btn': handleReadAloud(); break;
                 }
                 
@@ -501,7 +507,7 @@
         }
 
         async function getAIEvaluation(japanese, modelAnswer, userAnswer) {
-            const prompt = `あなたは優秀な英語の先生です。以下の日本語の文章を英訳する課題において、ユーザーが提出した英文を評価してください。\n# 指示\n- ユーザーの英文が、日本語の文章の意味を正確に反映しているか評価してください。\n- 文法的に自然で正しい英語かも評価してください。\n- 模範解答と完全に一致している必要はありません。同義語や別の構文が使われていても、意味と文法が正しければ「正解」としてください。\n- 文頭の大文字・小文字、文末のピリオド(.)や疑問符(?)、文中のカンマ(,)の有無は採点に影響させないでください。これらは完全に無視してください。\n- 評価結果と、なぜそのように評価したかの短いフィードバックをJSON形式で返してください。フィードバックでは、句読点に関する言及は一切しないでください。\n# 情報\n- 日本語原文: ${japanese}\n- 模範解答: ${modelAnswer}\n- ユーザーの解答: ${userAnswer}`;
+            const prompt = `あなたは優秀な英語の先生です。以下の日本語の文章を英訳する課題において、ユーザーが提出した英文を評価してください。\n# 指示\n- ユーザーの英文が、日本語の文章の意味を正確に反映しているか評価してください。\n- 文法的に自然で正しい英語かも評価してください。\n- 模範解答と完全に一致している必要はありません。同義語や別の構文が使われていても、意味と文法が正しければ「正解」としてください。\n- ユーザーの解答は音声入力を想定しているため、句読点の欠如に起因する文法的な指摘（例：文が繋がっているなど）は一切しないでください。\n- 文頭の大文字・小文字、文末のピリオド(.)や疑問符(?)、文中のカンマ(,)の有無は採点に影響させないでください。これらは完全に無視してください。\n- 評価結果と、なぜそのように評価したかの短いフィードバックをJSON形式で返してください。フィードバックでは、句読点に関する言及は一切しないでください。\n# 情報\n- 日本語原文: ${japanese}\n- 模範解答: ${modelAnswer}\n- ユーザーの解答: ${userAnswer}`;
             const payload = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
                 generationConfig: {
@@ -534,35 +540,50 @@
         
         function initializeAudio() { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.warn("Web Audio API is not supported."); } }
         function playSound(type) { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); if (type === 'correct') { o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.1); } else { o.type = 'square'; o.frequency.setValueAtTime(220, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(180, audioCtx.currentTime + 0.15); } g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.2); }
+        
         function initializeSpeechRecognition() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!('SpeechRecognition' in window)) {
+             if (!('SpeechRecognition' in window)) {
                 if(dom.micBtn) dom.micBtn.style.display = 'none';
+            }
+        }
+        
+        function startNewRecognition() {
+            if (!('SpeechRecognition' in window)) {
                 if(dom.micStatus) dom.micStatus.textContent = "音声入力に非対応です。";
                 return;
             }
+            
             recognition = new SpeechRecognition();
-            recognition.continuous = true; // Listen for longer pauses
+            recognition.continuous = true;
             recognition.lang = 'en-US';
             recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+            
+            let fullTranscript = '';
 
             recognition.onstart = () => {
                 isRecognizing = true;
-                dom.micStatus.textContent = '音声入力中... マイクアイコンを再度クリックして終了します。';
+                dom.micStatus.textContent = '音声入力中... 再度クリックで終了';
                 dom.micBtn.classList.add('text-red-500');
-                dom.englishInput.value = ''; // Clear previous text on start
+                dom.englishInput.value = '';
             };
 
             recognition.onresult = (event) => {
-                let transcript = '';
-                for (let i = 0; i < event.results.length; ++i) {
-                    transcript += event.results[i][0].transcript;
+                let currentTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        currentTranscript += event.results[i][0].transcript.trim() + ' ';
+                    }
                 }
-                dom.englishInput.value = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+                fullTranscript += currentTranscript;
+                let finalOutput = fullTranscript.trim();
+                if (finalOutput) {
+                    dom.englishInput.value = finalOutput.charAt(0).toUpperCase() + finalOutput.slice(1);
+                }
             };
 
             recognition.onerror = (event) => {
+                console.error('Speech Recognition Error:', event);
                 let message = '音声認識エラー';
                 if (event.error === 'no-speech') message = '音声が認識できませんでした。';
                 else if (event.error === 'not-allowed') message = 'マイクの使用が許可されていません。';
@@ -573,8 +594,12 @@
                 isRecognizing = false;
                 dom.micStatus.textContent = '';
                 dom.micBtn.classList.remove('text-red-500');
+                recognition = null;
             };
+            
+            recognition.start();
         }
+
         function handleReadAloud() { if ('speechSynthesis' in window && dom.japaneseSentence) { const utterance = new SpeechSynthesisUtterance(dom.japaneseSentence.textContent); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance); } }
         function getCollectionRef(collectionName) { 
             if (!userId) throw new Error("User not authenticated"); 
