@@ -288,13 +288,67 @@
                 document.body.innerHTML = `<div class="text-center p-8 text-red-500">認証に失敗しました。アプリをロードできません。</div>`;
             }
         }
+        
+        async function getAIEvaluation(japanese, modelAnswer, userAnswer) {
+            const prompt = `あなたは優秀な英語の先生です。以下の日本語の文章を英訳する課題において、ユーザーが提出した英文を評価してください。\n# 指示\n- ユーザーの英文が、日本語の文章の意味を正確に反映しているか評価してください。\n- 文法的に自然で正しい英語かも評価してください。\n- 模範解答と完全に一致している必要はありません。同義語や別の構文が使われていても、意味と文法が正しければ「正解」としてください。\n- 特に、文頭の大文字・小文字の違いは採点に影響させないでください。多少のタイポや大文字・小文字の間違いには寛容に評価してください。\n- 評価結果と、なぜそのように評価したかの短いフィードバックをJSON形式で返してください。フィードバックは簡潔で、学習の助けになるようにしてください。\n# 情報\n- 日本語原文: ${japanese}\n- 模範解答: ${modelAnswer}\n- ユーザーの解答: ${userAnswer}`;
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            isCorrect: { "type": "BOOLEAN" },
+                            feedback: { "type": "STRING" }
+                        },
+                        required: ["isCorrect", "feedback"]
+                    }
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({ error: { message: "不明なAPIエラー" } }));
+                    console.error("API Error Response:", errorBody);
+                    throw new Error(`APIリクエスト失敗: ${response.status} - ${errorBody.error?.message || '詳細不明'}`);
+                }
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                if (part && part.text) {
+                    return JSON.parse(part.text);
+                }
+                
+                console.error("Unexpected API response structure:", result);
+                throw new Error("AIからの応答形式が予期しないものです。");
+
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                let userFeedback = "AIによる採点ができませんでした。";
+                if (error.message.includes("APIリクエスト失敗")) {
+                    userFeedback += ` 理由: ${error.message.split(' - ')[1] || '詳細不明'}`;
+                } else if (error.message.includes("応答形式")) {
+                     userFeedback += " しばらくしてからもう一度お試しください。";
+                } else {
+                    userFeedback += " ネットワーク接続を確認するか、しばらく待ってから再試行してください。";
+                }
+                return { isCorrect: false, feedback: userFeedback };
+            }
+        }
+        
         // --- All other functions (unchanged) ---
         function initializeAudio() { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.warn("Web Audio API is not supported."); } }
         function playSound(type) { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); if (type === 'correct') { o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.1); } else { o.type = 'square'; o.frequency.setValueAtTime(220, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(180, audioCtx.currentTime + 0.15); } g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.2); }
         function initializeSpeechRecognition() { window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!('SpeechRecognition' in window)) { if(dom.micBtn) dom.micBtn.style.display = 'none'; if(dom.micStatus) dom.micStatus.textContent = "音声入力に非対応です。"; return; } recognition = new SpeechRecognition(); recognition.continuous = false; recognition.lang = 'en-US'; recognition.interimResults = false; recognition.maxAlternatives = 1; recognition.onstart = () => { isRecognizing = true; dom.micStatus.textContent = '音声入力中...'; dom.micBtn.classList.add('text-red-500'); }; recognition.onresult = (event) => { let transcript = event.results[0][0].transcript; if (dom.englishInput.value.trim() === '') { transcript = transcript.charAt(0).toUpperCase() + transcript.slice(1); dom.englishInput.value = transcript; } else { dom.englishInput.value += ' ' + transcript; } }; recognition.onerror = (event) => { let message = '音声認識エラー'; if (event.error === 'no-speech') message = '音声が認識できませんでした。'; else if (event.error === 'not-allowed') message = 'マイクの使用が許可されていません。'; dom.micStatus.textContent = message; }; recognition.onend = () => { isRecognizing = false; dom.micStatus.textContent = ''; dom.micBtn.classList.remove('text-red-500'); }; }
         function handleReadAloud() { if ('speechSynthesis' in window && dom.japaneseSentence) { const utterance = new SpeechSynthesisUtterance(dom.japaneseSentence.textContent); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance); } }
-        async function getAIEvaluation(japanese, modelAnswer, userAnswer) { const prompt = `あなたは優秀な英語の先生です。以下の日本語の文章を英訳する課題において、ユーザーが提出した英文を評価してください。\n# 指示\n- ユーザーの英文が、日本語の文章の意味を正確に反映しているか評価してください。\n- 文法的に自然で正しい英語かも評価してください。\n- 模範解答と完全に一致している必要はありません。同義語や別の構文が使われていても、意味と文法が正しければ「正解」としてください。\n- 特に、文頭の大文字・小文字の違いは採点に影響させないでください。多少のタイポや大文字・小文字の間違いには寛容に評価してください。\n- 評価結果と、なぜそのように評価したかの短いフィードバックをJSON形式で返してください。フィードバックは簡潔で、学習の助けになるようにしてください。\n# 情報\n- 日本語原文: ${japanese}\n- 模範解答: ${modelAnswer}\n- ユーザーの解答: ${userAnswer}`; const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { isCorrect: { type: "BOOLEAN" }, feedback: { type: "STRING" } }, required: ["isCorrect", "feedback"] } } }; const apiKey = ""; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`; try { const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) throw new Error(`API request failed with status ${response.status}`); const result = await response.json(); const part = result?.candidates?.[0]?.content?.parts?.[0]; if (part && part.text) return JSON.parse(part.text); throw new Error("Unexpected API response structure"); } catch (error) { console.error("Error calling Gemini API:", error); return { isCorrect: false, feedback: "AIによる採点ができませんでした。" }; } }
         function getCollectionRef(collectionName) { if (!userId) throw new Error("User not authenticated"); const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`); }
         async function loadAllUserData() { if (!userId) return; const profileDocRef = doc(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'}/users/${userId}/profile/main`); const profileSnap = await getDoc(profileDocRef); updateStreak(profileSnap.exists() ? profileSnap.data() : null); onSnapshot(query(getCollectionRef('questionStats')), snapshot => { const newStats = new Map(); snapshot.docs.forEach(docSnap => { const data = docSnap.data(); if(!allKnownSentences.has(data.ja)) allKnownSentences.set(data.ja, {ja: data.ja, en: data.en}); newStats.set(data.ja, { id: docSnap.id, ...data }); }); questionStats = newStats; updateStatsUI(); }); onSnapshot(query(getCollectionRef('history')), snapshot => { allTimeHistory = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()})); renderHistory(); }); }
         async function updateQuestionSRS(question, isCorrect, adjustment = null) { const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); const stats = questionStats.get(question.ja) || { ja: question.ja, en: question.en, level: 0, createdAt: Timestamp.fromDate(today) }; if (adjustment !== null) { stats.level = Math.max(0, (stats.level || 0) + adjustment); } else if (isCorrect) { stats.level = (stats.level || 0) + 1; } else { stats.level = 0; } const intervalDays = REVIEW_INTERVALS[Math.min(stats.level, REVIEW_INTERVALS.length - 1)]; const nextReviewDate = new Date(today); nextReviewDate.setDate(today.getDate() + intervalDays); stats.nextReviewDate = Timestamp.fromDate(nextReviewDate); stats.lastAttempted = Timestamp.fromDate(now); const docRef = stats.id ? doc(getCollectionRef('questionStats'), stats.id) : doc(getCollectionRef('questionStats')); await setDoc(docRef, stats, { merge: true }); }
