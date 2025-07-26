@@ -74,7 +74,12 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="main-app-wrapper">
+    <div id="app-loader" class="fixed inset-0 bg-white flex flex-col justify-center items-center z-50 transition-opacity duration-300">
+        <div class="loader"></div>
+        <p class="mt-4 text-gray-600">アプリを準備しています...</p>
+    </div>
+
+    <div id="main-app-wrapper" class="hidden">
         <div class="container mx-auto p-4 md:p-8 max-w-3xl">
             <header class="text-center mb-8 relative">
                 <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI 英作文練習アプリ</h1>
@@ -118,7 +123,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "1.8";
+        const APP_VERSION = "1.9";
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -383,54 +388,58 @@
             });
         }
         
-        function showScreen(screenName) {
-            ['mode-selection', 'custom-set-manager', 'set-detail-view', 'app-container', 'history-section'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.classList.add('hidden');
-            });
-
-            if (screenName === 'custom-set-manager' || screenName === 'set-detail-view') {
-                 document.getElementById(screenName).classList.remove('hidden');
-            } else {
-                document.getElementById('mode-selection').classList.remove('hidden');
-                document.getElementById('history-section').classList.remove('hidden');
-                if (screenName === 'quiz') {
-                    document.getElementById('app-container').classList.remove('hidden');
-                }
-            }
-        }
-
         async function initializeFirebase() {
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            if (!firebaseConfig.apiKey) { console.error("Firebase config is missing."); return; }
-            
+            if (!firebaseConfig.apiKey) {
+                console.error("Firebase config is missing.");
+                document.body.innerHTML = `<div class="p-8 text-center text-red-500">設定エラー。アプリをロードできません。</div>`;
+                return;
+            }
+
+            const appLoader = document.getElementById('app-loader');
+            if(!appLoader) { // Create if doesn't exist (robustness)
+                const loader = document.createElement('div');
+                loader.id = 'app-loader';
+                loader.className = 'fixed inset-0 bg-white flex flex-col justify-center items-center z-50 transition-opacity duration-300';
+                loader.innerHTML = `<div class="loader"></div><p class="mt-4 text-gray-600">アプリを準備しています...</p>`;
+                document.body.prepend(loader);
+            }
+            dom.mainAppWrapper.classList.add('hidden');
+
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
 
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
                     if(dom.userIdDisplay) dom.userIdDisplay.textContent = `ID: ${userId.substring(0, 8)}...`;
-                    loadAllUserData();
+                    
+                    await loadAllUserData();
+                    
+                    const loader = document.getElementById('app-loader');
+                    if (loader) {
+                        loader.classList.add('opacity-0');
+                        setTimeout(() => loader.remove(), 300);
+                    }
+                    dom.mainAppWrapper.classList.remove('hidden');
                 }
             });
 
             try {
                 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                if (auth.currentUser) {
-                    userId = auth.currentUser.uid;
-                } else if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
+                if (!auth.currentUser) {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
                 }
-                 if(dom.userIdDisplay) dom.userIdDisplay.textContent = `ID: ${auth.currentUser.uid.substring(0, 8)}...`;
-                 loadAllUserData();
             } catch (error) {
                 console.error("Authentication failed:", error);
-                document.body.innerHTML = `<div class="text-center p-8 text-red-500">認証に失敗しました。アプリをロードできません。</div>`;
+                const loader = document.getElementById('app-loader');
+                if(loader) loader.innerHTML = `<div class="text-center p-8 text-red-500">認証に失敗しました。アプリをロードできません。</div>`;
             }
         }
         
@@ -724,4 +733,4 @@
         }
     </script>
 </body>
-</html>
+</ht
