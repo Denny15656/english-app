@@ -141,11 +141,11 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.3";
-        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical to v3.2)
+        const APP_VERSION = "3.4";
+        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical to v3.3)
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -352,25 +352,24 @@
                     app = initializeApp(firebaseConfig);
                     db = getFirestore(app);
                     auth = getAuth(app);
+                    
+                    getRedirectResult(auth).catch(error => {
+                        console.error("Error getting redirect result", error);
+                        dom.authError.textContent = "ログイン情報の取得に失敗しました。";
+                    });
 
                     onAuthStateChanged(auth, async (user) => {
                         if (user) {
-                             if (!user.isAnonymous) {
-                                userId = user.uid;
-                                dom.authContainer.classList.add('hidden');
-                                dom.mainAppWrapper.classList.remove('hidden');
-                                if (user.photoURL) { dom.userAvatar.src = user.photoURL; dom.userAvatar.classList.remove('hidden'); }
-                                dom.userName.textContent = user.displayName || user.email;
-                                await loadAllUserData();
-                                resolve();
-                            } else {
-                                // If it's an anonymous user from previous versions, sign them out to force Google login
-                                await signOut(auth);
-                                dom.appLoader.classList.add('hidden');
-                                dom.authContainer.classList.remove('hidden');
-                            }
+                            userId = user.uid;
+                            dom.authContainer.classList.add('hidden');
+                            dom.mainAppWrapper.classList.remove('hidden');
+                            if (user.photoURL) { dom.userAvatar.src = user.photoURL; dom.userAvatar.classList.remove('hidden'); }
+                            dom.userName.textContent = user.displayName || user.email;
+                            await loadAllUserData();
+                            resolve();
                         } else {
                             dom.appLoader.classList.add('hidden');
+                            dom.mainAppWrapper.classList.add('hidden');
                             dom.authContainer.classList.remove('hidden');
                         }
                     });
@@ -387,7 +386,7 @@
             dom.versionDisplay.textContent = `Version ${APP_VERSION}`;
 
             try {
-                await initializeAppAndAuth(); // Wait for auth to complete
+                await initializeAppAndAuth();
                 
                 loadSettings();
                 initializeAudio();
@@ -410,7 +409,7 @@
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
-                await signInWithPopup(auth, provider);
+                await signInWithRedirect(auth, provider);
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
                 if (dom.authError) dom.authError.textContent = "Googleサインインに失敗しました。";
@@ -424,7 +423,7 @@
                 userId = null;
                 customProblemSets = [];
                 questionStats.clear();
-                showScreen('mode-selection'); // Go back to main screen, which will be hidden by onAuthStateChanged
+                showScreen('mode-selection'); 
             } catch (error) {
                 console.error("Sign-Out Error:", error);
             }
@@ -855,7 +854,3 @@
     </script>
 </body>
 </html>
-```
-
-My actual query is:
-シークレットモードや別画面でアクセスするとカスタム問題集や学習統計がゼロになっています。履歴管理はちゃんとできてい
