@@ -95,15 +95,21 @@
     <div id="main-app-wrapper" class="hidden">
         <div class="container mx-auto p-4 md:p-8 max-w-3xl">
             <header class="mb-8">
-                <div class="flex justify-between items-center h-16">
+                 <div class="relative flex justify-between items-center h-16">
                     <!-- Left side: Streak -->
-                    <div id="streak-display" class="flex items-center bg-orange-100 text-orange-600 font-bold px-3 py-1 rounded-full text-lg hidden">
+                    <div id="streak-display" class="flex-shrink-0 flex items-center bg-orange-100 text-orange-600 font-bold px-3 py-1 rounded-full text-lg hidden">
                         🔥 <span id="streak-count" class="ml-1">0</span>
                     </div>
-                    <div class="flex-grow"></div> <!-- Spacer -->
+
+                    <!-- Center: Title -->
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 whitespace-nowrap">AI 英作文練習アプリ</h1>
+                        <p class="text-gray-600 mt-1 text-xs sm:text-sm hidden md:block">間隔反復システムで効率的に学習しよう</p>
+                    </div>
+                    
                     <!-- Right side: User info and controls -->
-                    <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                         <div id="user-info" class="flex items-center text-sm text-gray-500">
+                    <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 ml-auto">
+                        <div id="user-info" class="flex items-center text-sm text-gray-500">
                             <img id="user-avatar" class="w-8 h-8 rounded-full mr-2 hidden">
                             <span id="user-name" class="font-semibold truncate hidden sm:block"></span>
                         </div>
@@ -124,10 +130,6 @@
                              <span class="tooltiptext">ログアウト</span>
                         </div>
                     </div>
-                </div>
-                <div class="text-center mt-2">
-                    <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI 英作文練習アプリ</h1>
-                    <p class="text-gray-600 mt-2">間隔反復システムで効率的に学習しよう</p>
                 </div>
             </header>
             
@@ -153,7 +155,7 @@
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const APP_VERSION = "3.20";
-        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical)
+        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical to v3.2)
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -193,7 +195,7 @@
         // ... (populateUI and other UI functions are identical to v3.2)
         function populateUI() {
             document.getElementById('settings-modal').innerHTML = `<div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md"><h3 class="text-xl font-bold mb-6">設定</h3><div class="space-y-6"><div><label for="max-questions-input" class="block text-sm font-medium text-gray-700 mb-1">1セッションの最大問題数</label><input type="number" id="max-questions-input" min="5" max="100" class="w-full p-2 border border-gray-300 rounded-lg"><p class="text-xs text-gray-500 mt-1">一度に学習する問題の数を設定します。(5〜100)</p></div><div><label class="block text-sm font-medium text-gray-700 mb-2">カスタム問題の出題順</label><div class="flex space-x-4"><label class="inline-flex items-center"><input type="radio" name="question-order" value="random" class="form-radio text-blue-600"> <span class="ml-2">ランダム</span></label><label class="inline-flex items-center"><input type="radio" name="question-order" value="in-order" class="form-radio text-blue-600" checked> <span class="ml-2">ファイル順</span></label></div></div></div><div class="mt-8 flex justify-end space-x-3"><button id="settings-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">キャンセル</button><button id="settings-save-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">保存</button></div></div>`;
-            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2 relative">📅 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
+            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2 relative">� 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
             document.getElementById('app-container').innerHTML = `<div id="loading-screen" class="hidden justify-center items-center py-10"><div class="text-center"><div class="loader mx-auto"></div><p class="mt-4 text-gray-600">AIが採点中です...</p><div id="loading-tip" class="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-700 w-full max-w-md mx-auto"></div></div></div><div id="quiz-section"><div class="flex justify-between items-center mb-4"><p id="progress-counter" class="text-sm font-medium"></p></div><div class="bg-gray-50 p-4 rounded-lg mb-4"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-600 mb-1">日本語</p><p id="japanese-sentence" class="text-lg font-semibold"></p></div><button id="read-aloud-btn" class="p-2 rounded-full hover:bg-gray-200" title="読み上げ"></button></div></div><div id="model-answer-container" class="hidden bg-blue-50 p-4 rounded-lg mb-4"><p class="text-sm text-blue-600 mb-1">模範解答</p><p id="model-answer" class="text-md font-medium text-blue-800"></p></div><div><label for="english-input" class="block text-sm font-medium">あなたの回答</label><div class="relative"><textarea id="english-input" rows="4" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500"></textarea><button id="mic-btn" class="absolute top-1/2 right-3 -translate-y-1/2 p-2 text-gray-500" title="音声入力"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg></button></div><p id="mic-status" class="text-xs h-4 mt-1"></p></div><button id="submit-btn" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">採点する</button><div id="result-area" class="mt-6 hidden"></div><div id="manual-srs-area" class="mt-4 hidden"></div></div><div id="finish-screen" class="hidden text-center py-10"><h2 id="finish-title" class="text-2xl font-bold text-green-600"></h2><p id="finish-message" class="mt-2"></p><div class="flex justify-center mt-6"><button id="back-to-mode-select-btn" class="bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700">モード選択に戻る</button></div></div>`;
             document.getElementById('history-section').innerHTML = `<h2 class="text-2xl font-bold mb-4">学習統計</h2><div id="stats-area" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center"><div><p class="text-2xl font-bold text-blue-600" id="stat-learning">0</p><p class="text-sm text-gray-500">学習中</p></div><div><p class="text-2xl font-bold text-green-600" id="stat-mastered">0</p><p class="text-sm text-gray-500">習得済み</p></div><div><p class="text-2xl font-bold text-yellow-600" id="stat-due">0</p><p class="text-sm text-gray-500">今日復習</p></div><div><p class="text-2xl font-bold text-gray-600" id="stat-total">0</p><p class="text-sm text-gray-500">全問題数</p></div></div><h3 class="text-xl font-bold mb-4">全回答履歴</h3><div id="history-filters" class="flex flex-wrap gap-2 mb-4"><button data-filter="all" class="history-filter-btn bg-blue-200 text-blue-800 py-1 px-3 rounded-full text-sm">すべて</button><button data-filter="correct" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">正解のみ</button><button data-filter="incorrect" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">不正解のみ</button></div><ul id="history-list" class="space-y-4"></ul>`;
             document.getElementById('custom-set-manager').innerHTML = `
@@ -830,3 +832,4 @@
     </script>
 </body>
 </html>
+�
