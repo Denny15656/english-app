@@ -155,7 +155,7 @@
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const APP_VERSION = "3.22";
-        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical to v3.2)
+        // ---定数---
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -168,6 +168,7 @@
             { ja: "昨日は友達と映画を見に行きました。", en: "I went to see a movie with my friend yesterday." },
             { ja: "もし時間があれば、この本を読むべきです。", en: "If you have time, you should read this book." },
         ];
+        const allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
         const englishTips = [
             "'advice'は不可算名詞なので、'an advice'ではなく'a piece of advice'と言います。",
             "'very'は形容詞を修飾しますが、'much'は動詞を修飾します。'I like it very much.'",
@@ -177,6 +178,7 @@
             "英語のリスニング力を上げるには、たくさん聞くことが一番の近道です。"
         ];
 
+        // ---状態変数---
         let dom = {};
         let app, auth, db;
         let userId = null;
@@ -192,10 +194,10 @@
         let audioCtx;
         let customProblemSets = [];
 
-        // ... (populateUI and other UI functions are identical to v3.2)
+        // ---UI生成---
         function populateUI() {
             document.getElementById('settings-modal').innerHTML = `<div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md"><h3 class="text-xl font-bold mb-6">設定</h3><div class="space-y-6"><div><label for="max-questions-input" class="block text-sm font-medium text-gray-700 mb-1">1セッションの最大問題数</label><input type="number" id="max-questions-input" min="5" max="100" class="w-full p-2 border border-gray-300 rounded-lg"><p class="text-xs text-gray-500 mt-1">一度に学習する問題の数を設定します。(5〜100)</p></div><div><label class="block text-sm font-medium text-gray-700 mb-2">カスタム問題の出題順</label><div class="flex space-x-4"><label class="inline-flex items-center"><input type="radio" name="question-order" value="random" class="form-radio text-blue-600"> <span class="ml-2">ランダム</span></label><label class="inline-flex items-center"><input type="radio" name="question-order" value="in-order" class="form-radio text-blue-600" checked> <span class="ml-2">ファイル順</span></label></div></div></div><div class="mt-8 flex justify-end space-x-3"><button id="settings-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">キャンセル</button><button id="settings-save-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">保存</button></div></div>`;
-            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2 relative">📅 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
+            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="relative border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📅 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
             document.getElementById('app-container').innerHTML = `<div id="loading-screen" class="hidden justify-center items-center py-10"><div class="text-center"><div class="loader mx-auto"></div><p class="mt-4 text-gray-600">AIが採点中です...</p><div id="loading-tip" class="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-700 w-full max-w-md mx-auto"></div></div></div><div id="quiz-section"><div class="flex justify-between items-center mb-4"><p id="progress-counter" class="text-sm font-medium"></p></div><div class="bg-gray-50 p-4 rounded-lg mb-4"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-600 mb-1">日本語</p><p id="japanese-sentence" class="text-lg font-semibold"></p></div><button id="read-aloud-btn" class="p-2 rounded-full hover:bg-gray-200" title="読み上げ"></button></div></div><div id="model-answer-container" class="hidden bg-blue-50 p-4 rounded-lg mb-4"><p class="text-sm text-blue-600 mb-1">模範解答</p><p id="model-answer" class="text-md font-medium text-blue-800"></p></div><div><label for="english-input" class="block text-sm font-medium">あなたの回答</label><div class="relative"><textarea id="english-input" rows="4" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500"></textarea><button id="mic-btn" class="absolute top-1/2 right-3 -translate-y-1/2 p-2 text-gray-500" title="音声入力"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg></button></div><p id="mic-status" class="text-xs h-4 mt-1"></p></div><button id="submit-btn" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">採点する</button><div id="result-area" class="mt-6 hidden"></div><div id="manual-srs-area" class="mt-4 hidden"></div></div><div id="finish-screen" class="hidden text-center py-10"><h2 id="finish-title" class="text-2xl font-bold text-green-600"></h2><p id="finish-message" class="mt-2"></p><div class="flex justify-center mt-6"><button id="back-to-mode-select-btn" class="bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700">モード選択に戻る</button></div></div>`;
             document.getElementById('history-section').innerHTML = `<h2 class="text-2xl font-bold mb-4">学習統計</h2><div id="stats-area" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center"><div><p class="text-2xl font-bold text-blue-600" id="stat-learning">0</p><p class="text-sm text-gray-500">学習中</p></div><div><p class="text-2xl font-bold text-green-600" id="stat-mastered">0</p><p class="text-sm text-gray-500">習得済み</p></div><div><p class="text-2xl font-bold text-yellow-600" id="stat-due">0</p><p class="text-sm text-gray-500">今日復習</p></div><div><p class="text-2xl font-bold text-gray-600" id="stat-total">0</p><p class="text-sm text-gray-500">全問題数</p></div></div><h3 class="text-xl font-bold mb-4">全回答履歴</h3><div id="history-filters" class="flex flex-wrap gap-2 mb-4"><button data-filter="all" class="history-filter-btn bg-blue-200 text-blue-800 py-1 px-3 rounded-full text-sm">すべて</button><button data-filter="correct" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">正解のみ</button><button data-filter="incorrect" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">不正解のみ</button></div><ul id="history-list" class="space-y-4"></ul>`;
             document.getElementById('custom-set-manager').innerHTML = `
@@ -261,7 +263,6 @@
                 googleSigninBtn: document.getElementById('google-signin-btn'),
                 authError: document.getElementById('auth-error'),
                 mainAppWrapper: document.getElementById('main-app-wrapper'),
-                userIdDisplay: document.getElementById('user-id-display'),
                 streakDisplay: document.getElementById('streak-display'),
                 streakCount: document.getElementById('streak-count'),
                 userInfo: document.getElementById('user-info'),
@@ -329,16 +330,17 @@
             };
         }
         
+        // ---初期化---
         async function initializeAppAndAuth() {
             // --- 重要：公開サイト用のFirebase設定 ---
             const firebaseConfig = {
-              apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
-              authDomain: "english-app-e5b4d.firebaseapp.com",
-              projectId: "english-app-e5b4d",
-              storageBucket: "english-app-e5b4d.appspot.com",
-              messagingSenderId: "482204446370",
-              appId: "1:482204446370:web:cc50237afb7abedae531fb",
-              measurementId: "G-XGBJ9S1RVT"
+             apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
+             authDomain: "english-app-e5b4d.firebaseapp.com",
+             projectId: "english-app-e5b4d",
+             storageBucket: "english-app-e5b4d.appspot.com",
+             messagingSenderId: "482204446370",
+             appId: "1:482204446370:web:cc50237afb7abedae531fb",
+             measurementId: "G-XGBJ9S1RVT"
             };
             
             app = initializeApp(firebaseConfig);
@@ -354,13 +356,15 @@
                         dom.authContainer.classList.add('hidden');
                         dom.mainAppWrapper.classList.remove('hidden');
                         if (user.photoURL) { dom.userAvatar.src = user.photoURL; dom.userAvatar.classList.remove('hidden'); }
-                        dom.userName.textContent = user.displayName || user.email;
+                        if (dom.userName) dom.userName.textContent = user.displayName || user.email;
                         await loadAllUserData(); // Load data every time user is confirmed
                         resolve(user);
                     } else {
+                        userId = null;
                         dom.appLoader.classList.add('hidden');
                         dom.mainAppWrapper.classList.add('hidden');
                         dom.authContainer.classList.remove('hidden');
+                        // No need to reject here, just show login screen
                     }
                 }, reject);
             });
@@ -379,21 +383,24 @@
                 initializeAudio();
                 initializeSpeechRecognition();
                 setupEventListeners();
+                updateAutoReadAloudUI();
                 
                 dom.appLoader.classList.add('opacity-0');
-                setTimeout(() => dom.appLoader.remove(), 300);
-               
+                setTimeout(() => dom.appLoader.style.display = 'none', 300);
+                
             } catch(error) {
-                 console.error("Initialization failed:", error);
-                 const appLoader = document.getElementById('app-loader');
-                 if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 text-red-500">${error.message}</div>`;
+                console.error("Initialization failed:", error);
+                const appLoader = document.getElementById('app-loader');
+                if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 text-red-500">初期化に失敗しました: ${error.message}</div>`;
             }
         });
         
+        // ---認証---
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
+                // onAuthStateChanged will handle the UI update
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
                 if (dom.authError) dom.authError.textContent = `サインインエラー: ${error.code}`;
@@ -403,22 +410,29 @@
         async function signOutUser() {
             try {
                 await signOut(auth);
+                // onAuthStateChanged will handle the UI update
+                // Clear user-specific data from memory
+                questionStats = new Map();
+                allTimeHistory = [];
+                customProblemSets = [];
             } catch (error) {
                 console.error("Sign-Out Error:", error);
             }
         }
 
+        // ---イベントリスナー---
         function setupEventListeners() {
-            dom.settingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
             dom.googleSigninBtn.addEventListener('click', signInWithGoogle);
             dom.signoutBtn.addEventListener('click', signOutUser);
-            
+            dom.settingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
+
             document.body.addEventListener('click', async (e) => {
                 const button = e.target.closest('button');
                 if (!button) return;
 
                 const buttonId = button.id;
                 
+                // SRS調整ボタン
                 if (button.classList.contains('srs-adj-btn')) {
                     button.closest('#manual-srs-area').querySelectorAll('button').forEach(b => b.disabled = true);
                     const adjustment = parseInt(button.dataset.adj, 10);
@@ -429,6 +443,7 @@
                     return;
                 }
 
+                // 問題集削除ボタン
                 if (button.classList.contains('delete-set-btn')) {
                     const setId = button.dataset.setId;
                     const setTitle = button.dataset.setTitle;
@@ -437,6 +452,7 @@
                     dom.deleteConfirmModal.classList.remove('hidden');
                 }
                 
+                // IDベースのボタンスイッチ
                 switch (buttonId) {
                     case 'settings-cancel-btn': dom.settingsModal.classList.add('hidden'); break;
                     case 'settings-save-btn': saveSettings(); break;
@@ -444,7 +460,7 @@
                     case 'delete-confirm-btn': handleDeleteSet(button.dataset.setId); break;
                     case 'auto-read-aloud-toggle':
                         isAutoReadAloud = !isAutoReadAloud;
-                        button.innerHTML = isAutoReadAloud ? ICONS.readAloudOn : ICONS.readAloudOff;
+                        updateAutoReadAloudUI();
                         break;
                     case 'manage-custom-sets-btn': showScreen('custom-set-manager'); break;
                     case 'back-to-mode-from-manager-btn':
@@ -452,14 +468,16 @@
                         showScreen('mode-selection');
                         break;
                     case 'back-to-manager-from-detail-btn': showScreen('custom-set-manager'); break;
-                    case 'start-default-quiz-btn': startQuiz(defaultSentences.filter(q => !questionStats.has(q.ja)), 'default'); break;
+                    case 'start-default-quiz-btn': 
+                        startQuiz(defaultSentences.filter(q => !questionStats.has(q.ja) || questionStats.get(q.ja).level === 0), 'default'); 
+                        break;
                     case 'start-review-quiz-btn': {
                         const now = new Date();
                         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                         const dueSentences = Array.from(questionStats.values())
                             .filter(stat => stat.nextReviewDate?.toDate() <= today)
                             .map(stat => allKnownSentences.get(stat.ja))
-                            .filter(Boolean);
+                            .filter(Boolean); // Ensure sentence exists
                         startQuiz(dueSentences, 'review');
                         break;
                     }
@@ -481,7 +499,10 @@
                     case 'read-aloud-btn': handleReadAloud(); break;
                 }
                 
+                // 詳細表示ボタン
                 if (button.classList.contains('view-set-detail-btn')) viewSetDetails(button.dataset.setId);
+                
+                // 履歴フィルター
                 if (button.matches('.history-filter-btn')) {
                     currentFilter = button.dataset.filter;
                     document.querySelectorAll('.history-filter-btn').forEach(b => { 
@@ -494,15 +515,17 @@
                 }
             });
             
-            document.body.addEventListener('change', (e) => {
+            // ファイルアップロードボタンの有効化/無効化
+            document.body.addEventListener('input', (e) => {
                 if(e.target.id === 'csv-upload' || e.target.id === 'set-title-input') {
-                    const title = document.getElementById('set-title-input').value.trim();
-                    const file = document.getElementById('csv-upload').files[0];
-                    document.getElementById('upload-set-btn').disabled = !(title && file);
+                    const title = dom.setTitleInput.value.trim();
+                    const file = dom.csvUpload.files[0];
+                    dom.uploadSetBtn.disabled = !(title && file);
                 }
             });
         }
         
+        // ---メインロジック---
         async function handleSubmit() {
             const userAnswer = dom.englishInput.value.trim();
             if (!userAnswer) return;
@@ -560,6 +583,7 @@
             }
         }
         
+        // ---音声---
         function initializeAudio() { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.warn("Web Audio API is not supported."); } }
         function playSound(type) { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); if (type === 'correct') { o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.1); } else { o.type = 'square'; o.frequency.setValueAtTime(220, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(180, audioCtx.currentTime + 0.15); } g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.2); }
         
@@ -623,6 +647,8 @@
         }
 
         function handleReadAloud() { if ('speechSynthesis' in window && dom.japaneseSentence) { const utterance = new SpeechSynthesisUtterance(dom.japaneseSentence.textContent); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance); } }
+        
+        // ---データ操作---
         function getCollectionRef(collectionName) {
             if (!userId) throw new Error("User not authenticated");
             return collection(db, 'users', userId, collectionName);
@@ -630,6 +656,9 @@
         
         async function loadAllUserData() {
             if (!userId) return;
+            
+            // 既存のリスナーがあればデタッチ（今回は簡単のため省略）
+            
             const profileDocRef = doc(getCollectionRef('profile'), 'main');
             const profileSnap = await getDoc(profileDocRef);
             updateStreak(profileSnap.exists() ? profileSnap.data() : null);
@@ -650,7 +679,14 @@
             });
              onSnapshot(query(getCollectionRef('problemSets')), snapshot => {
                 customProblemSets = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()}));
+                // 問題文をallKnownSentencesに追加
+                customProblemSets.forEach(set => {
+                    if (set.sentences) {
+                        set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
+                    }
+                });
                 renderProblemSetList();
+                updateStatsUI(); // カスタム問題がロードされた後で統計を再計算
             });
         }
         
@@ -659,7 +695,9 @@
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const stats = questionStats.get(question.ja) || { ja: question.ja, en: question.en, level: 0, attemptCount: 0, correctCount: 0, createdAt: Timestamp.fromDate(today) };
             
-            stats.attemptCount = (stats.attemptCount || 0) + 1;
+            if (adjustment === null) {
+              stats.attemptCount = (stats.attemptCount || 0) + 1;
+            }
 
             if (adjustment !== null) {
                 stats.level = Math.max(0, (stats.level || 0) + adjustment);
@@ -667,7 +705,7 @@
                 stats.level = (stats.level || 0) + 1;
                 stats.correctCount = (stats.correctCount || 0) + 1;
             } else {
-                stats.level = 0;
+                stats.level = Math.max(0, stats.level - 1); // 不正解なら1レベルダウン
             }
             
             const intervalDays = REVIEW_INTERVALS[Math.min(stats.level, REVIEW_INTERVALS.length - 1)];
@@ -676,7 +714,7 @@
             stats.nextReviewDate = Timestamp.fromDate(nextReviewDate);
             stats.lastAttempted = Timestamp.fromDate(now);
             
-            const docRef = stats.id ? doc(getCollectionRef('questionStats'), stats.id) : doc(getCollectionRef('questionStats'));
+            const docRef = stats.id ? doc(getCollectionRef('questionStats'), stats.id) : doc(getCollectionRef('questionStats'), question.ja.replace(/\s/g, ''));
             await setDoc(docRef, stats, { merge: true });
         }
         async function updateStreak(profileData) { 
@@ -697,6 +735,7 @@
             await setDoc(profileDocRef, { streakCount: streak, lastLoginDate: todayStr }, { merge: true }); 
         }
         
+        // ---設定---
         function loadSettings() { 
             const savedSettings = localStorage.getItem('engApp.settings'); 
             if (savedSettings) settings = JSON.parse(savedSettings); 
@@ -708,8 +747,41 @@
         }
         function saveSettings() { const newMax = parseInt(dom.maxQuestionsInput.value, 10); if (newMax < 5 || newMax > 100) { alert('5から100の数値を入力'); return; } settings.maxQuestionsPerSession = newMax; settings.customQuestionOrder = document.querySelector('input[name="question-order"]:checked').value; localStorage.setItem('engApp.settings', JSON.stringify(settings)); dom.settingsModal.classList.add('hidden'); }
         
-        function updateStatsUI() { if(!dom.stats.learning) return; const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); let learning = 0, mastered = 0, due = 0; const allKnownJa = new Set([...defaultSentences.map(s=>s.ja), ...Array.from(questionStats.keys())]); questionStats.forEach(stat => { if(stat.level >= MASTERED_LEVEL) mastered++; else learning++; if (stat.nextReviewDate?.toDate() <= today) due++; }); dom.stats.learning.textContent = learning; dom.stats.mastered.textContent = mastered; dom.stats.due.textContent = due; dom.stats.total.textContent = allKnownJa.size; dom.reviewCountBadge.textContent = due; dom.reviewCountBadge.classList.toggle('hidden', due === 0); dom.startReviewQuizBtn.disabled = due === 0; }
+        // ---UI更新---
+        function updateStatsUI() { if(!dom.stats.learning) return; const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); let learning = 0, mastered = 0, due = 0; questionStats.forEach(stat => { if(stat.level >= MASTERED_LEVEL) mastered++; else learning++; if (stat.nextReviewDate?.toDate() <= today && stat.level < MASTERED_LEVEL) due++; }); dom.stats.learning.textContent = learning; dom.stats.mastered.textContent = mastered; dom.stats.due.textContent = due; dom.stats.total.textContent = allKnownSentences.size; dom.reviewCountBadge.textContent = due; dom.reviewCountBadge.classList.toggle('hidden', due === 0); dom.startReviewQuizBtn.disabled = due === 0; }
         
+        function updateAutoReadAloudUI() {
+            dom.autoReadAloudToggle.innerHTML = isAutoReadAloud ? ICONS.readAloudOn : ICONS.readAloudOff;
+        }
+
+        /**
+         * 画面表示を切り替える関数
+         * @param {string} screenId 表示する画面のID ('mode-selection', 'app-container', 'custom-set-manager'など)
+         */
+        function showScreen(screenId) {
+            const mainScreens = ['mode-selection', 'custom-set-manager', 'set-detail-view', 'app-container'];
+            
+            // 全てのメインスクリーンを隠す
+            mainScreens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            // 指定されたスクリーンを表示
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden');
+            }
+
+            // クイズ画面(app-container)の時だけ履歴セクションを隠す
+            const historySection = document.getElementById('history-section');
+            if (screenId === 'app-container') {
+                historySection.classList.add('hidden');
+            } else {
+                historySection.classList.remove('hidden');
+            }
+        }
+
         function startQuiz(sentences, mode) {
             currentQuestionIndex = 0; 
             let finalSentences = sentences; 
@@ -717,15 +789,14 @@
                 finalSentences = [...sentences].sort(() => 0.5 - Math.random()); 
             }
             activeSentences = finalSentences.slice(0, settings.maxQuestionsPerSession); 
+            showScreen('app-container'); // 'app-container' を表示するように変更
             if(activeSentences.length === 0){ 
-                showScreen('quiz');
                 dom.quizSection.classList.add('hidden'); 
                 dom.finishScreen.classList.remove('hidden'); 
                 dom.finishTitle.textContent = "問題がありません"; 
                 dom.finishMessage.textContent = "このモードで学習する問題は現在ありません。"; 
                 return; 
             } 
-            showScreen('quiz');
             showQuestion(); 
         }
 
@@ -734,6 +805,7 @@
         function renderManualSrsControls() { const question = activeSentences[currentQuestionIndex]; const stats = questionStats.get(question.ja) || { level: 0 }; dom.manualSrsArea.innerHTML = `<p class="text-sm text-center text-gray-600 mb-2">現在の復習レベル: ${stats.level}</p><div class="flex justify-center gap-4"><button data-adj="-1" class="srs-adj-btn bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200">まだ苦手...</button><button data-adj="1" class="srs-adj-btn bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200">簡単だった!</button></div><p id="srs-adj-feedback" class="text-center text-sm text-blue-600 h-4 mt-2"></p>`; dom.manualSrsArea.classList.remove('hidden'); }
         function renderHistory() { if(!dom.historyList) return; const sortedHistory = [...allTimeHistory].sort((a,b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0)); if (sortedHistory.length === 0) { dom.historyList.innerHTML = '<li class="text-center text-gray-500">まだ学習履歴がありません。</li>'; return; } const fH = sortedHistory.filter(i => currentFilter === 'all' || (currentFilter === 'correct' && i.isCorrect) || (currentFilter === 'incorrect' && !i.isCorrect)); if (fH.length === 0) { dom.historyList.innerHTML = `<li class="text-center text-gray-500">この条件に合う履歴はありません。</li>`; return; } dom.historyList.innerHTML = fH.map(i => `<li class="p-4 border rounded-lg ${i.isCorrect ? 'bg-green-50' : 'bg-red-50'}"><p class="text-sm text-gray-500 mb-1">${i.timestamp ? new Date(i.timestamp.seconds * 1000).toLocaleString('ja-JP') : ''}</p><p class="font-semibold mb-2">${i.japanese}</p><p>あなたの回答: <span class="font-normal text-gray-700">${i.userAnswer}</span></p><div class="p-2 mt-2 rounded ${i.isCorrect ? 'bg-green-100' : 'bg-red-100'}"><p class="text-sm font-medium">${i.isCorrect ? '✓ 正解' : '✗ 不正解'}: ${i.feedback}</p></div></li>`).join(''); }
         
+        // ---カスタム問題集---
         async function handleProblemSetUpload() {
             const title = dom.setTitleInput.value.trim();
             const file = dom.csvUpload.files[0];
@@ -765,7 +837,10 @@
                 dom.uploadStatus.textContent = `エラー: ${error.message}`;
                 console.error("Upload error:", error);
             } finally {
-                dom.uploadSetBtn.disabled = false;
+                // re-enable button after a delay
+                setTimeout(() => {
+                    dom.uploadSetBtn.disabled = !(dom.setTitleInput.value.trim() && dom.csvUpload.files[0]);
+                }, 2000);
             }
         }
         
@@ -776,8 +851,8 @@
                 listEl.innerHTML = `<p class="text-gray-500 text-center">まだ問題集がありません。上からアップロードしてください。</p>`;
                 return;
             }
-            listEl.innerHTML = customProblemSets.sort((a,b) => b.createdAt?.seconds - a.createdAt?.seconds).map(set => {
-                const learnedCount = set.sentences?.filter(s => questionStats.has(s.ja) && questionStats.get(s.ja).level > 0).length || 0;
+            listEl.innerHTML = customProblemSets.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).map(set => {
+                const learnedCount = set.sentences?.filter(s => questionStats.has(s.ja) && questionStats.get(s.ja).attemptCount > 0).length || 0;
                 return `
                 <div class="border rounded-lg p-4 flex justify-between items-center">
                     <div>
@@ -824,8 +899,10 @@
             try {
                 await deleteDoc(doc(getCollectionRef('problemSets'), setId));
                 dom.deleteConfirmModal.classList.add('hidden');
+                // The onSnapshot listener will automatically re-render the list.
             } catch (error) {
                 console.error("Error deleting set:", error);
+                // We should avoid alert() in a real app, but for simplicity:
                 alert("削除中にエラーが発生しました。");
             }
         }
