@@ -154,7 +154,7 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.24"; // バージョンを更新
+        const APP_VERSION = "3.26"; // バージョンを更新
         // ---定数---
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
@@ -332,7 +332,6 @@
         
         // ---初期化---
         async function initializeAppAndAuth() {
-            // --- 重要：公開サイト用のFirebase設定 ---
             const firebaseConfig = {
              apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
              authDomain: "english-app-e5b4d.firebaseapp.com",
@@ -346,12 +345,18 @@
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
+            console.log("Firebase initialized.");
 
             try {
-                // スマホでのリダイレクト認証からの復帰を処理
-                await getRedirectResult(auth);
+                console.log("Checking for redirect result...");
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    console.log("Successfully handled redirect result for user:", result.user.displayName);
+                } else {
+                    console.log("No redirect result found.");
+                }
             } catch (error) {
-                console.error("リダイレクト結果の取得エラー:", error);
+                console.error("Error getting redirect result:", error);
                 if (dom.authError) dom.authError.textContent = `認証エラー: ${error.message}`;
             }
 
@@ -414,18 +419,41 @@
         
         // ---認証---
         async function signInWithGoogle() {
+            console.log("signInWithGoogle: function called.");
+    
+            if (!auth) {
+                console.error("signInWithGoogle: auth object is not initialized.");
+                if (dom.authError) dom.authError.textContent = "認証サービスの準備ができていません。";
+                return;
+            }
+
             const provider = new GoogleAuthProvider();
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log(`signInWithGoogle: Detected mobile device: ${isMobile}`);
+
+            dom.googleSigninBtn.disabled = true;
+            dom.googleSigninBtn.innerHTML = `
+                <div class="loader" style="width:24px; height:24px; border-top-color: #4285F4; margin-right: 12px;"></div>
+                処理中...
+            `;
 
             try {
                 if (isMobile) {
+                    console.log("signInWithGoogle: Attempting sign-in with redirect for mobile.");
                     await signInWithRedirect(auth, provider);
                 } else {
+                    console.log("signInWithGoogle: Attempting sign-in with popup for desktop.");
                     await signInWithPopup(auth, provider);
                 }
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
-                if (dom.authError) dom.authError.textContent = `サインインエラー: ${error.code}`;
+                if (dom.authError) dom.authError.textContent = `サインインエラー: ${error.code || error.message}`;
+                
+                dom.googleSigninBtn.disabled = false;
+                dom.googleSigninBtn.innerHTML = `
+                    <svg class="w-6 h-6 mr-3" viewBox="0 0 48 48"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g></svg>
+                    Googleでサインイン
+                `;
             }
         }
         
