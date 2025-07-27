@@ -154,7 +154,7 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.22";
+        const APP_VERSION = "3.23"; // バージョンを更新
         // ---定数---
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
@@ -168,7 +168,7 @@
             { ja: "昨日は友達と映画を見に行きました。", en: "I went to see a movie with my friend yesterday." },
             { ja: "もし時間があれば、この本を読むべきです。", en: "If you have time, you should read this book." },
         ];
-        const allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+        let allKnownSentences = new Map();
         const englishTips = [
             "'advice'は不可算名詞なので、'an advice'ではなく'a piece of advice'と言います。",
             "'very'は形容詞を修飾しますが、'much'は動詞を修飾します。'I like it very much.'",
@@ -349,22 +349,34 @@
 
             return new Promise((resolve, reject) => {
                 const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                    // This listener stays active to handle sign-in/sign-out
                     if (user) {
                         userId = user.uid;
+
+                        // ユーザーが切り替わるたびにローカルの状態をリセット
+                        questionStats = new Map();
+                        allTimeHistory = [];
+                        customProblemSets = [];
+                        allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+                        
                         dom.appLoader.classList.add('hidden');
                         dom.authContainer.classList.add('hidden');
                         dom.mainAppWrapper.classList.remove('hidden');
                         if (user.photoURL) { dom.userAvatar.src = user.photoURL; dom.userAvatar.classList.remove('hidden'); }
                         if (dom.userName) dom.userName.textContent = user.displayName || user.email;
-                        await loadAllUserData(); // Load data every time user is confirmed
+                        
+                        await loadAllUserData(); // 新しいユーザーのデータを読み込む
                         resolve(user);
                     } else {
                         userId = null;
+                        // ログアウト時も状態をリセット
+                        questionStats = new Map();
+                        allTimeHistory = [];
+                        customProblemSets = [];
+                        allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+
                         dom.appLoader.classList.add('hidden');
                         dom.mainAppWrapper.classList.add('hidden');
                         dom.authContainer.classList.remove('hidden');
-                        // No need to reject here, just show login screen
                     }
                 }, reject);
             });
@@ -400,7 +412,6 @@
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
-                // onAuthStateChanged will handle the UI update
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
                 if (dom.authError) dom.authError.textContent = `サインインエラー: ${error.code}`;
@@ -410,11 +421,7 @@
         async function signOutUser() {
             try {
                 await signOut(auth);
-                // onAuthStateChanged will handle the UI update
-                // Clear user-specific data from memory
-                questionStats = new Map();
-                allTimeHistory = [];
-                customProblemSets = [];
+                // onAuthStateChangedが状態リセットとUI更新をハンドルする
             } catch (error) {
                 console.error("Sign-Out Error:", error);
             }
@@ -432,7 +439,6 @@
 
                 const buttonId = button.id;
                 
-                // SRS調整ボタン
                 if (button.classList.contains('srs-adj-btn')) {
                     button.closest('#manual-srs-area').querySelectorAll('button').forEach(b => b.disabled = true);
                     const adjustment = parseInt(button.dataset.adj, 10);
@@ -443,7 +449,6 @@
                     return;
                 }
 
-                // 問題集削除ボタン
                 if (button.classList.contains('delete-set-btn')) {
                     const setId = button.dataset.setId;
                     const setTitle = button.dataset.setTitle;
@@ -452,7 +457,6 @@
                     dom.deleteConfirmModal.classList.remove('hidden');
                 }
                 
-                // IDベースのボタンスイッチ
                 switch (buttonId) {
                     case 'settings-cancel-btn': dom.settingsModal.classList.add('hidden'); break;
                     case 'settings-save-btn': saveSettings(); break;
@@ -477,7 +481,7 @@
                         const dueSentences = Array.from(questionStats.values())
                             .filter(stat => stat.nextReviewDate?.toDate() <= today)
                             .map(stat => allKnownSentences.get(stat.ja))
-                            .filter(Boolean); // Ensure sentence exists
+                            .filter(Boolean);
                         startQuiz(dueSentences, 'review');
                         break;
                     }
@@ -499,10 +503,8 @@
                     case 'read-aloud-btn': handleReadAloud(); break;
                 }
                 
-                // 詳細表示ボタン
                 if (button.classList.contains('view-set-detail-btn')) viewSetDetails(button.dataset.setId);
                 
-                // 履歴フィルター
                 if (button.matches('.history-filter-btn')) {
                     currentFilter = button.dataset.filter;
                     document.querySelectorAll('.history-filter-btn').forEach(b => { 
@@ -515,7 +517,6 @@
                 }
             });
             
-            // ファイルアップロードボタンの有効化/無効化
             document.body.addEventListener('input', (e) => {
                 if(e.target.id === 'csv-upload' || e.target.id === 'set-title-input') {
                     const title = dom.setTitleInput.value.trim();
@@ -657,11 +658,10 @@
         async function loadAllUserData() {
             if (!userId) return;
             
-            // 既存のリスナーがあればデタッチ（今回は簡単のため省略）
-            
             const profileDocRef = doc(getCollectionRef('profile'), 'main');
-            const profileSnap = await getDoc(profileDocRef);
-            updateStreak(profileSnap.exists() ? profileSnap.data() : null);
+            getDoc(profileDocRef).then(profileSnap => {
+                updateStreak(profileSnap.exists() ? profileSnap.data() : null);
+            });
 
             onSnapshot(query(getCollectionRef('questionStats')), snapshot => {
                 const newStats = new Map();
@@ -670,23 +670,28 @@
                     newStats.set(data.ja, { id: docSnap.id, ...data });
                 });
                 questionStats = newStats;
-                updateStatsUI();
-                renderProblemSetList(); 
+                updateStatsUI(); 
             });
+
             onSnapshot(query(getCollectionRef('history')), snapshot => {
                 allTimeHistory = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()}));
-                if(document.getElementById('history-list')) renderHistory();
+                if(dom.historyList) renderHistory();
             });
+
              onSnapshot(query(getCollectionRef('problemSets')), snapshot => {
                 customProblemSets = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()}));
-                // 問題文をallKnownSentencesに追加
+                
+                // データを読み込んだ後、マスター問題リストを再構築
+                allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
                 customProblemSets.forEach(set => {
                     if (set.sentences) {
                         set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
                     }
                 });
+
+                // 関連するUIを全て更新
                 renderProblemSetList();
-                updateStatsUI(); // カスタム問題がロードされた後で統計を再計算
+                updateStatsUI(); 
             });
         }
         
@@ -705,7 +710,7 @@
                 stats.level = (stats.level || 0) + 1;
                 stats.correctCount = (stats.correctCount || 0) + 1;
             } else {
-                stats.level = Math.max(0, stats.level - 1); // 不正解なら1レベルダウン
+                stats.level = Math.max(0, stats.level - 1);
             }
             
             const intervalDays = REVIEW_INTERVALS[Math.min(stats.level, REVIEW_INTERVALS.length - 1)];
@@ -745,7 +750,7 @@
                 if (radio) radio.checked = true;
             }
         }
-        function saveSettings() { const newMax = parseInt(dom.maxQuestionsInput.value, 10); if (newMax < 5 || newMax > 100) { alert('5から100の数値を入力'); return; } settings.maxQuestionsPerSession = newMax; settings.customQuestionOrder = document.querySelector('input[name="question-order"]:checked').value; localStorage.setItem('engApp.settings', JSON.stringify(settings)); dom.settingsModal.classList.add('hidden'); }
+        function saveSettings() { const newMax = parseInt(dom.maxQuestionsInput.value, 10); if (newMax < 5 || newMax > 100) { alert('5から100の数値を入力してください。'); return; } settings.maxQuestionsPerSession = newMax; settings.customQuestionOrder = document.querySelector('input[name="question-order"]:checked').value; localStorage.setItem('engApp.settings', JSON.stringify(settings)); dom.settingsModal.classList.add('hidden'); }
         
         // ---UI更新---
         function updateStatsUI() { if(!dom.stats.learning) return; const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); let learning = 0, mastered = 0, due = 0; questionStats.forEach(stat => { if(stat.level >= MASTERED_LEVEL) mastered++; else learning++; if (stat.nextReviewDate?.toDate() <= today && stat.level < MASTERED_LEVEL) due++; }); dom.stats.learning.textContent = learning; dom.stats.mastered.textContent = mastered; dom.stats.due.textContent = due; dom.stats.total.textContent = allKnownSentences.size; dom.reviewCountBadge.textContent = due; dom.reviewCountBadge.classList.toggle('hidden', due === 0); dom.startReviewQuizBtn.disabled = due === 0; }
@@ -754,26 +759,19 @@
             dom.autoReadAloudToggle.innerHTML = isAutoReadAloud ? ICONS.readAloudOn : ICONS.readAloudOff;
         }
 
-        /**
-         * 画面表示を切り替える関数
-         * @param {string} screenId 表示する画面のID ('mode-selection', 'app-container', 'custom-set-manager'など)
-         */
         function showScreen(screenId) {
             const mainScreens = ['mode-selection', 'custom-set-manager', 'set-detail-view', 'app-container'];
             
-            // 全てのメインスクリーンを隠す
             mainScreens.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
 
-            // 指定されたスクリーンを表示
             const targetScreen = document.getElementById(screenId);
             if (targetScreen) {
                 targetScreen.classList.remove('hidden');
             }
 
-            // クイズ画面(app-container)の時だけ履歴セクションを隠す
             const historySection = document.getElementById('history-section');
             if (screenId === 'app-container') {
                 historySection.classList.add('hidden');
@@ -789,7 +787,7 @@
                 finalSentences = [...sentences].sort(() => 0.5 - Math.random()); 
             }
             activeSentences = finalSentences.slice(0, settings.maxQuestionsPerSession); 
-            showScreen('app-container'); // 'app-container' を表示するように変更
+            showScreen('app-container');
             if(activeSentences.length === 0){ 
                 dom.quizSection.classList.add('hidden'); 
                 dom.finishScreen.classList.remove('hidden'); 
@@ -837,7 +835,6 @@
                 dom.uploadStatus.textContent = `エラー: ${error.message}`;
                 console.error("Upload error:", error);
             } finally {
-                // re-enable button after a delay
                 setTimeout(() => {
                     dom.uploadSetBtn.disabled = !(dom.setTitleInput.value.trim() && dom.csvUpload.files[0]);
                 }, 2000);
@@ -899,10 +896,8 @@
             try {
                 await deleteDoc(doc(getCollectionRef('problemSets'), setId));
                 dom.deleteConfirmModal.classList.add('hidden');
-                // The onSnapshot listener will automatically re-render the list.
             } catch (error) {
                 console.error("Error deleting set:", error);
-                // We should avoid alert() in a real app, but for simplicity:
                 alert("削除中にエラーが発生しました。");
             }
         }
