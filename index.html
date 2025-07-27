@@ -154,12 +154,10 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.32"; // バージョンを更新
+        const APP_VERSION = "3.33"; // バージョンを更新
         
         // --- 重要：APIキーを設定してください ---
-        // 以下のAPIキーを、ご自身の有効なGemini APIキーに置き換えてください。
-        // キーの取得方法：https://aistudio.google.com/app/apikey
-        const GEMINI_API_KEY = "AIzaSyDWZNtqlIBmY3fGo8mgtdN7EBhA2bv0U3Y"; // ★★★★★ ここにAPIキーを入力 ★★★★★
+        const GEMINI_API_KEY = "AIzaSyDWZNtqlIBmY3fGo8mgtdN7EBhA2bv0U3Y";
 
         // ---定数---
         const ICONS = {
@@ -638,29 +636,42 @@
         async function getAIConversationResponse(history) {
             const payload = {
                 contents: history,
+            };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error("API request failed");
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                return text || "申し訳ありません、うまく応答できませんでした。";
+            } catch (error) {
+                console.error("Error calling conversational Gemini API:", error);
+                return "エラーが発生しました。もう一度試してください。";
+            }
+        }
+
+        async function getAIAudioResponse(textToSpeak) {
+             const payload = {
+                contents: [{ parts: [{ text: textToSpeak }] }],
                 generationConfig: {
-                    responseModalities: ["TEXT", "AUDIO"],
+                    responseModalities: ["AUDIO"],
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
                 },
                 model: "gemini-2.5-flash-preview-tts"
             };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${GEMINI_API_KEY}`;
-
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error("API request failed");
                 const result = await response.json();
-                const textPart = result?.candidates?.[0]?.content?.parts?.find(p => p.text);
                 const audioPart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                
                 return {
-                    text: textPart?.text || "申し訳ありません、うまく応答できませんでした。",
                     audioData: audioPart?.inlineData?.data,
                     mimeType: audioPart?.inlineData?.mimeType
                 };
             } catch (error) {
-                console.error("Error calling conversational Gemini API:", error);
-                return { text: "エラーが発生しました。もう一度試してください。", audioData: null };
+                 console.error("Error calling TTS Gemini API:", error);
+                return { audioData: null };
             }
         }
 
@@ -809,13 +820,19 @@
                      dom.conversationLog.scrollTop = dom.conversationLog.scrollHeight;
                      conversationContext.history.push({ role: 'user', parts: [{ text: transcript }] });
 
-                     const { text, audioData, mimeType } = await getAIConversationResponse(conversationContext.history);
+                     const textResponse = await getAIConversationResponse(conversationContext.history);
                      
-                     conversationContext.history.push({ role: 'model', parts: [{ text }] });
-                     dom.conversationLog.innerHTML += `<div class="text-left"><span class="inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm">${text}</span></div>`;
+                     conversationContext.history.push({ role: 'model', parts: [{ text: textResponse }] });
+                     dom.conversationLog.innerHTML += `<div class="text-left"><span class="inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm">${textResponse}</span></div>`;
                      dom.conversationLog.scrollTop = dom.conversationLog.scrollHeight;
                      
-                     playAIAudio(audioData, mimeType);
+                     if(textResponse.startsWith("エラー")) {
+                         speakText(textResponse);
+                         dom.askAiVoiceBtn.disabled = false;
+                     } else {
+                         const { audioData, mimeType } = await getAIAudioResponse(textResponse);
+                         playAIAudio(audioData, mimeType);
+                     }
                  }
              };
  
@@ -1138,3 +1155,7 @@
     </script>
 </body>
 </html>
+" selected, and the user provided the following query: "PCでログインできましたがAIに音声で質問すると下記エラーとなります
+
+エラーが発生しました。もう一度試してください。
+またモバイルログインはやはりできませ
