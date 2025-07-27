@@ -154,7 +154,7 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.30"; // バージョンを更新
+        const APP_VERSION = "3.31"; // バージョンを更新
         // ---定数---
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
@@ -199,8 +199,8 @@
         // ---UI生成---
         function populateUI() {
             document.getElementById('settings-modal').innerHTML = `<div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md"><h3 class="text-xl font-bold mb-6">設定</h3><div class="space-y-6"><div><label for="max-questions-input" class="block text-sm font-medium text-gray-700 mb-1">1セッションの最大問題数</label><input type="number" id="max-questions-input" min="5" max="100" class="w-full p-2 border border-gray-300 rounded-lg"><p class="text-xs text-gray-500 mt-1">一度に学習する問題の数を設定します。(5〜100)</p></div><div><label class="block text-sm font-medium text-gray-700 mb-2">カスタム問題の出題順</label><div class="flex space-x-4"><label class="inline-flex items-center"><input type="radio" name="question-order" value="random" class="form-radio text-blue-600"> <span class="ml-2">ランダム</span></label><label class="inline-flex items-center"><input type="radio" name="question-order" value="in-order" class="form-radio text-blue-600" checked> <span class="ml-2">ファイル順</span></label></div></div></div><div class="mt-8 flex justify-end space-x-3"><button id="settings-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">キャンセル</button><button id="settings-save-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">保存</button></div></div>`;
-            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="relative border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">� 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
-            document.getElementById('app-container').innerHTML = `<div id="loading-screen" class="hidden justify-center items-center py-10"><div class="text-center"><div class="loader mx-auto"></div><p class="mt-4 text-gray-600">AIが採点中です...</p><div id="loading-tip" class="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-700 w-full max-w-md mx-auto"></div></div></div><div id="quiz-section"><div class="flex justify-between items-center mb-4"><p id="progress-counter" class="text-sm font-medium"></p></div><div class="bg-gray-50 p-4 rounded-lg mb-4"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-600 mb-1">日本語</p><p id="japanese-sentence" class="text-lg font-semibold"></p></div><button id="read-aloud-btn" class="p-2 rounded-full hover:bg-gray-200" title="読み上げ"></button></div></div><div id="model-answer-container" class="hidden bg-blue-50 p-4 rounded-lg mb-4"><p class="text-sm text-blue-600 mb-1">模範解答</p><p id="model-answer" class="text-md font-medium text-blue-800"></p></div><div><label for="english-input" class="block text-sm font-medium">あなたの回答</label><div class="relative"><textarea id="english-input" rows="4" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500"></textarea><button id="mic-btn" class="absolute top-1/2 right-3 -translate-y-1/2 p-2 text-gray-500" title="音声入力"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg></button></div><p id="mic-status" class="text-xs h-4 mt-1"></p></div><button id="submit-btn" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">採点する</button><div id="result-area" class="mt-6 hidden"></div><div id="manual-srs-area" class="mt-4 hidden"></div><div id="conversation-area" class="mt-6 hidden"><h4 class="font-bold text-md mb-2">AIに質問する</h4><div id="conversation-log" class="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg max-h-60 overflow-y-auto"></div><div class="flex items-center space-x-2"><input type="text" id="follow-up-input" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="フィードバックについて質問してみよう"><button id="ask-ai-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">送信</button></div><div id="ai-thinking-indicator" class="text-sm text-gray-500 mt-2 h-4 hidden">AIが考えています...</div></div></div><div id="finish-screen" class="hidden text-center py-10"><h2 id="finish-title" class="text-2xl font-bold text-green-600"></h2><p id="finish-message" class="mt-2"></p><div class="flex justify-center mt-6"><button id="back-to-mode-select-btn" class="bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700">モード選択に戻る</button></div></div>`;
+            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="relative border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📅 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
+            document.getElementById('app-container').innerHTML = `<div id="loading-screen" class="hidden justify-center items-center py-10"><div class="text-center"><div class="loader mx-auto"></div><p class="mt-4 text-gray-600">AIが採点中です...</p><div id="loading-tip" class="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-700 w-full max-w-md mx-auto"></div></div></div><div id="quiz-section"><div class="flex justify-between items-center mb-4"><p id="progress-counter" class="text-sm font-medium"></p></div><div class="bg-gray-50 p-4 rounded-lg mb-4"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-600 mb-1">日本語</p><p id="japanese-sentence" class="text-lg font-semibold"></p></div><button id="read-aloud-btn" class="p-2 rounded-full hover:bg-gray-200" title="読み上げ"></button></div></div><div id="model-answer-container" class="hidden bg-blue-50 p-4 rounded-lg mb-4"><p class="text-sm text-blue-600 mb-1">模範解答</p><p id="model-answer" class="text-md font-medium text-blue-800"></p></div><div><label for="english-input" class="block text-sm font-medium">あなたの回答</label><div class="relative"><textarea id="english-input" rows="4" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500"></textarea><button id="mic-btn" class="absolute top-1/2 right-3 -translate-y-1/2 p-2 text-gray-500" title="音声入力"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg></button></div><p id="mic-status" class="text-xs h-4 mt-1"></p></div><button id="submit-btn" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">採点する</button><div id="result-area" class="mt-6 hidden"></div><div id="manual-srs-area" class="mt-4 hidden"></div><div id="conversation-area" class="mt-6 hidden"><h4 class="font-bold text-md mb-2">AIに音声で質問する</h4><div id="conversation-log" class="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg max-h-60 overflow-y-auto"></div><div class="flex flex-col items-center"><button id="ask-ai-voice-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 flex items-center justify-center"><svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg> 音声で質問する</button><p id="ai-conversation-status" class="text-sm text-gray-500 mt-2 h-4"></p></div></div></div><div id="finish-screen" class="hidden text-center py-10"><h2 id="finish-title" class="text-2xl font-bold text-green-600"></h2><p id="finish-message" class="mt-2"></p><div class="flex justify-center mt-6"><button id="back-to-mode-select-btn" class="bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700">モード選択に戻る</button></div></div>`;
             document.getElementById('history-section').innerHTML = `<h2 class="text-2xl font-bold mb-4">学習統計</h2><div id="stats-area" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center"><div><p class="text-2xl font-bold text-blue-600" id="stat-learning">0</p><p class="text-sm text-gray-500">学習中</p></div><div><p class="text-2xl font-bold text-green-600" id="stat-mastered">0</p><p class="text-sm text-gray-500">習得済み</p></div><div><p class="text-2xl font-bold text-yellow-600" id="stat-due">0</p><p class="text-sm text-gray-500">今日復習</p></div><div><p class="text-2xl font-bold text-gray-600" id="stat-total">0</p><p class="text-sm text-gray-500">全問題数</p></div></div><h3 class="text-xl font-bold mb-4">全回答履歴</h3><div id="history-filters" class="flex flex-wrap gap-2 mb-4"><button data-filter="all" class="history-filter-btn bg-blue-200 text-blue-800 py-1 px-3 rounded-full text-sm">すべて</button><button data-filter="correct" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">正解のみ</button><button data-filter="incorrect" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">不正解のみ</button></div><ul id="history-list" class="space-y-4"></ul>`;
             document.getElementById('custom-set-manager').innerHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -306,9 +306,8 @@
                 manualSrsArea: document.getElementById('manual-srs-area'),
                 conversationArea: document.getElementById('conversation-area'),
                 conversationLog: document.getElementById('conversation-log'),
-                followUpInput: document.getElementById('follow-up-input'),
-                askAiBtn: document.getElementById('ask-ai-btn'),
-                aiThinkingIndicator: document.getElementById('ai-thinking-indicator'),
+                askAiVoiceBtn: document.getElementById('ask-ai-voice-btn'),
+                aiConversationStatus: document.getElementById('ai-conversation-status'),
                 finishScreen: document.getElementById('finish-screen'),
                 finishTitle: document.getElementById('finish-title'),
                 finishMessage: document.getElementById('finish-message'),
@@ -475,104 +474,102 @@
 
         // ---イベントリスナー---
         function setupEventListeners() {
-            // 最も確実な方法として、onclickプロパティに直接関数を代入
-            dom.googleSigninBtn.onclick = signInWithGoogle;
+             dom.googleSigninBtn.onclick = signInWithGoogle;
+             dom.signoutBtn.addEventListener('click', signOutUser);
+             dom.settingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
+             dom.askAiVoiceBtn.addEventListener('click', handleVoiceQuestion);
 
-            dom.signoutBtn.addEventListener('click', signOutUser);
-            dom.settingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
-            dom.askAiBtn.addEventListener('click', handleFollowUpQuestion);
-
-            document.body.addEventListener('click', async (e) => {
-                const button = e.target.closest('button');
-                if (!button || button.id === 'google-signin-btn') return;
-
-                const buttonId = button.id;
-                
-                if (button.classList.contains('srs-adj-btn')) {
-                    button.closest('#manual-srs-area').querySelectorAll('button').forEach(b => b.disabled = true);
-                    const adjustment = parseInt(button.dataset.adj, 10);
-                    const question = activeSentences[currentQuestionIndex];
-                    await updateQuestionSRS(question, null, adjustment);
-                    currentQuestionIndex++;
-                    showQuestion();
-                    return;
-                }
-
-                if (button.classList.contains('delete-set-btn')) {
-                    const setId = button.dataset.setId;
-                    const setTitle = button.dataset.setTitle;
-                    dom.deleteConfirmMessage.textContent = `「${setTitle}」を本当に削除しますか？この操作は取り消せません。`;
-                    dom.deleteConfirmBtn.dataset.setId = setId;
-                    dom.deleteConfirmModal.classList.remove('hidden');
-                }
-                
-                switch (buttonId) {
-                    case 'settings-cancel-btn': dom.settingsModal.classList.add('hidden'); break;
-                    case 'settings-save-btn': saveSettings(); break;
-                    case 'delete-cancel-btn': dom.deleteConfirmModal.classList.add('hidden'); break;
-                    case 'delete-confirm-btn': handleDeleteSet(button.dataset.setId); break;
-                    case 'auto-read-aloud-toggle':
-                        isAutoReadAloud = !isAutoReadAloud;
-                        updateAutoReadAloudUI();
-                        break;
-                    case 'manage-custom-sets-btn': showScreen('custom-set-manager'); break;
-                    case 'back-to-mode-from-manager-btn':
-                    case 'back-to-mode-select-btn':
-                        showScreen('mode-selection');
-                        break;
-                    case 'back-to-manager-from-detail-btn': showScreen('custom-set-manager'); break;
-                    case 'start-default-quiz-btn': 
-                        startQuiz(defaultSentences.filter(q => !questionStats.has(q.ja) || questionStats.get(q.ja).level === 0), 'default'); 
-                        break;
-                    case 'start-review-quiz-btn': {
-                        const now = new Date();
-                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                        const dueSentences = Array.from(questionStats.values())
-                            .filter(stat => stat.nextReviewDate?.toDate() <= today)
-                            .map(stat => allKnownSentences.get(stat.ja))
-                            .filter(Boolean);
-                        startQuiz(dueSentences, 'review');
-                        break;
-                    }
-                    case 'upload-set-btn': handleProblemSetUpload(); break;
-                    case 'start-quiz-from-detail-btn': {
-                        const setId = button.dataset.setId;
-                        const problemSet = customProblemSets.find(p => p.id === setId);
-                        if (problemSet && problemSet.sentences) startQuiz(problemSet.sentences, 'custom');
-                        break;
-                    }
-                    case 'submit-btn': handleSubmit(); break;
-                    case 'mic-btn': 
-                         if (isRecognizing) {
-                            if(recognition) recognition.stop();
-                        } else {
-                            startNewRecognition();
-                        }
-                        break;
-                    case 'read-aloud-btn': handleReadAloud(); break;
-                }
-                
-                if (button.classList.contains('view-set-detail-btn')) viewSetDetails(button.dataset.setId);
-                
-                if (button.matches('.history-filter-btn')) {
-                    currentFilter = button.dataset.filter;
-                    document.querySelectorAll('.history-filter-btn').forEach(b => { 
-                        b.classList.remove('bg-blue-200', 'text-blue-800');
-                        b.classList.add('bg-gray-200', 'text-gray-800'); 
-                    });
-                    button.classList.add('bg-blue-200', 'text-blue-800');
-                    button.classList.remove('bg-gray-200', 'text-gray-800');
-                    renderHistory();
-                }
-            });
-            
-            document.body.addEventListener('input', (e) => {
-                if(e.target.id === 'csv-upload' || e.target.id === 'set-title-input') {
-                    const title = dom.setTitleInput.value.trim();
-                    const file = dom.csvUpload.files[0];
-                    dom.uploadSetBtn.disabled = !(title && file);
-                }
-            });
+             document.body.addEventListener('click', async (e) => {
+                 const button = e.target.closest('button');
+                 if (!button || button.id === 'google-signin-btn') return;
+ 
+                 const buttonId = button.id;
+                 
+                 if (button.classList.contains('srs-adj-btn')) {
+                     button.closest('#manual-srs-area').querySelectorAll('button').forEach(b => b.disabled = true);
+                     const adjustment = parseInt(button.dataset.adj, 10);
+                     const question = activeSentences[currentQuestionIndex];
+                     await updateQuestionSRS(question, null, adjustment);
+                     currentQuestionIndex++;
+                     showQuestion();
+                     return;
+                 }
+ 
+                 if (button.classList.contains('delete-set-btn')) {
+                     const setId = button.dataset.setId;
+                     const setTitle = button.dataset.setTitle;
+                     dom.deleteConfirmMessage.textContent = `「${setTitle}」を本当に削除しますか？この操作は取り消せません。`;
+                     dom.deleteConfirmBtn.dataset.setId = setId;
+                     dom.deleteConfirmModal.classList.remove('hidden');
+                 }
+                 
+                 switch (buttonId) {
+                     case 'settings-cancel-btn': dom.settingsModal.classList.add('hidden'); break;
+                     case 'settings-save-btn': saveSettings(); break;
+                     case 'delete-cancel-btn': dom.deleteConfirmModal.classList.add('hidden'); break;
+                     case 'delete-confirm-btn': handleDeleteSet(button.dataset.setId); break;
+                     case 'auto-read-aloud-toggle':
+                         isAutoReadAloud = !isAutoReadAloud;
+                         updateAutoReadAloudUI();
+                         break;
+                     case 'manage-custom-sets-btn': showScreen('custom-set-manager'); break;
+                     case 'back-to-mode-from-manager-btn':
+                     case 'back-to-mode-select-btn':
+                         showScreen('mode-selection');
+                         break;
+                     case 'back-to-manager-from-detail-btn': showScreen('custom-set-manager'); break;
+                     case 'start-default-quiz-btn': 
+                         startQuiz(defaultSentences.filter(q => !questionStats.has(q.ja) || questionStats.get(q.ja).level === 0), 'default'); 
+                         break;
+                     case 'start-review-quiz-btn': {
+                         const now = new Date();
+                         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                         const dueSentences = Array.from(questionStats.values())
+                             .filter(stat => stat.nextReviewDate?.toDate() <= today)
+                             .map(stat => allKnownSentences.get(stat.ja))
+                             .filter(Boolean);
+                         startQuiz(dueSentences, 'review');
+                         break;
+                     }
+                     case 'upload-set-btn': handleProblemSetUpload(); break;
+                     case 'start-quiz-from-detail-btn': {
+                         const setId = button.dataset.setId;
+                         const problemSet = customProblemSets.find(p => p.id === setId);
+                         if (problemSet && problemSet.sentences) startQuiz(problemSet.sentences, 'custom');
+                         break;
+                     }
+                     case 'submit-btn': handleSubmit(); break;
+                     case 'mic-btn': 
+                          if (isRecognizing) {
+                             if(recognition) recognition.stop();
+                         } else {
+                             startNewRecognition('english-input');
+                         }
+                         break;
+                     case 'read-aloud-btn': handleReadAloud(); break;
+                 }
+                 
+                 if (button.classList.contains('view-set-detail-btn')) viewSetDetails(button.dataset.setId);
+                 
+                 if (button.matches('.history-filter-btn')) {
+                     currentFilter = button.dataset.filter;
+                     document.querySelectorAll('.history-filter-btn').forEach(b => { 
+                         b.classList.remove('bg-blue-200', 'text-blue-800');
+                         b.classList.add('bg-gray-200', 'text-gray-800'); 
+                     });
+                     button.classList.add('bg-blue-200', 'text-blue-800');
+                     button.classList.remove('bg-gray-200', 'text-gray-800');
+                     renderHistory();
+                 }
+             });
+             
+             document.body.addEventListener('input', (e) => {
+                 if(e.target.id === 'csv-upload' || e.target.id === 'set-title-input') {
+                     const title = dom.setTitleInput.value.trim();
+                     const file = dom.csvUpload.files[0];
+                     dom.uploadSetBtn.disabled = !(title && file);
+                 }
+             });
         }
         
         // ---メインロジック---
@@ -634,56 +631,37 @@
         }
 
         async function getAIConversationResponse(history) {
-            const prompt = `あなたは英語学習者の質問に答える、親切で優秀な英語の先生です。以下の会話の文脈を踏まえて、最後のユーザーの質問に日本語で簡潔に答えてください。\n\n# これまでの会話:\n${history.map(h => `${h.role === 'user' ? '学習者' : '先生'}: ${h.parts[0].text}`).join('\n')}`;
             const payload = {
                 contents: history,
+                generationConfig: {
+                    responseModalities: ["TEXT", "AUDIO"],
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                },
+                model: "gemini-2.5-flash-preview-tts"
             };
-            const apiKey = "AIzaSyDShPbHlyGuE08dXQOFMkVa-mr2P50D_8c";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiKey = "AIzaSyDShPbHlyGuE08dXQOFMkVa-mr2P50D_8c"; // Replace with your actual key
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
 
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error("API request failed");
                 const result = await response.json();
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                return text || "申し訳ありません、うまく応答できませんでした。";
+                const textPart = result?.candidates?.[0]?.content?.parts?.find(p => p.text);
+                const audioPart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                
+                return {
+                    text: textPart?.text || "申し訳ありません、うまく応答できませんでした。",
+                    audioData: audioPart?.inlineData?.data,
+                    mimeType: audioPart?.inlineData?.mimeType
+                };
             } catch (error) {
                 console.error("Error calling conversational Gemini API:", error);
-                return "エラーが発生しました。もう一度試してください。";
+                return { text: "エラーが発生しました。もう一度試してください。", audioData: null };
             }
         }
 
-        async function handleFollowUpQuestion() {
-            const userInput = dom.followUpInput.value.trim();
-            if (!userInput || !conversationContext) return;
-
-            dom.askAiBtn.disabled = true;
-            dom.followUpInput.disabled = true;
-            dom.aiThinkingIndicator.classList.remove('hidden');
-
-            // Add user message to log
-            dom.conversationLog.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-500 text-white rounded-lg px-3 py-2 text-sm">${userInput}</span></div>`;
-            dom.conversationLog.scrollTop = dom.conversationLog.scrollHeight;
-            
-            // Add user input to conversation history
-            conversationContext.history.push({ role: 'user', parts: [{ text: userInput }] });
-
-            const aiResponse = await getAIConversationResponse(conversationContext.history);
-            
-            // Add AI response to history
-            conversationContext.history.push({ role: 'model', parts: [{ text: aiResponse }] });
-
-            // Add AI response to log
-            dom.conversationLog.innerHTML += `<div class="text-left"><span class="inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm">${aiResponse}</span></div>`;
-            dom.conversationLog.scrollTop = dom.conversationLog.scrollHeight;
-            
-            speakText(aiResponse);
-
-            dom.askAiBtn.disabled = false;
-            dom.followUpInput.disabled = false;
-            dom.followUpInput.value = '';
-            dom.aiThinkingIndicator.classList.add('hidden');
-            dom.followUpInput.focus();
+        async function handleVoiceQuestion() {
+            startNewRecognition('conversation');
         }
         
         // ---音声---
@@ -697,6 +675,84 @@
                 console.warn("Speech Synthesis not supported.");
             }
         }
+        
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bytesPerSample = 2; // 16-bit PCM
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcmData.length * bytesPerSample;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            /* RIFF identifier */
+            view.setUint32(0, 1380533830, false); // "RIFF"
+            /* file length */
+            view.setUint32(4, 36 + dataSize, true);
+            /* RIFF type */
+            view.setUint32(8, 1463899717, false); // "WAVE"
+            /* format chunk identifier */
+            view.setUint32(12, 1718449184, false); // "fmt "
+            /* format chunk length */
+            view.setUint32(16, 16, true);
+            /* sample format (raw) */
+            view.setUint32(20, 1, true); // PCM
+            /* channel count */
+            view.setUint16(22, numChannels, true);
+            /* sample rate */
+            view.setUint32(24, sampleRate, true);
+            /* byte rate (sample rate * block align) */
+            view.setUint32(28, byteRate, true);
+            /* block align (channel count * bytes per sample) */
+            view.setUint16(32, blockAlign, true);
+            /* bits per sample */
+            view.setUint16(34, 16, true);
+            /* data chunk identifier */
+            view.setUint32(36, 1684108385, false); // "data"
+            /* data chunk length */
+            view.setUint32(40, dataSize, true);
+            
+            const pcm16 = new Int16Array(buffer, 44, pcmData.length);
+            pcm16.set(pcmData);
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+
+        async function playAIAudio(audioData, mimeType) {
+            if (!audioData || !audioCtx) return;
+            try {
+                const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                const pcmBuffer = base64ToArrayBuffer(audioData);
+                const pcm16 = new Int16Array(pcmBuffer);
+                const wavBlob = pcmToWav(pcm16, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                const audio = new Audio(audioUrl);
+                dom.aiConversationStatus.textContent = "AIが話しています...";
+                audio.play();
+                audio.onended = () => {
+                    dom.aiConversationStatus.textContent = "";
+                    dom.askAiVoiceBtn.disabled = false;
+                    URL.revokeObjectURL(audioUrl);
+                };
+            } catch (error) {
+                console.error("Error playing AI audio:", error);
+                dom.aiConversationStatus.textContent = "音声の再生に失敗しました。";
+                dom.askAiVoiceBtn.disabled = false;
+            }
+        }
+
         function initializeAudio() { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.warn("Web Audio API is not supported."); } }
         function playSound(type) { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); if (type === 'correct') { o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.1); } else { o.type = 'square'; o.frequency.setValueAtTime(220, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(180, audioCtx.currentTime + 0.15); } g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.2); }
         
@@ -704,59 +760,78 @@
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
              if (!('SpeechRecognition' in window)) {
                 if(dom.micBtn) dom.micBtn.style.display = 'none';
+                if(dom.askAiVoiceBtn) dom.askAiVoiceBtn.style.display = 'none';
             }
         }
         
-        function startNewRecognition() {
-            if (!('SpeechRecognition' in window)) {
-                if(dom.micStatus) dom.micStatus.textContent = "音声入力に非対応です。";
-                return;
-            }
-            
-            recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            
-            let fullTranscript = '';
+        function startNewRecognition(type) {
+             if (!('SpeechRecognition' in window) || isRecognizing) return;
 
-            recognition.onstart = () => {
-                isRecognizing = true;
-                dom.micStatus.textContent = '音声入力中... 再度クリックで終了';
-                dom.micBtn.classList.add('text-red-500');
-                dom.englishInput.value = '';
-            };
+             recognition = new SpeechRecognition();
+             recognition.continuous = false; // Stop after a single utterance
+             recognition.interimResults = false;
+             
+             let targetDomStatus, targetDomButton, lang;
 
-            recognition.onresult = (event) => {
-                let currentTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        currentTranscript += event.results[i][0].transcript.trim() + ' ';
-                    }
-                }
-                fullTranscript += currentTranscript;
-                let finalOutput = fullTranscript.trim();
-                if (finalOutput) {
-                    dom.englishInput.value = finalOutput.charAt(0).toUpperCase() + finalOutput.slice(1);
-                }
-            };
+             if (type === 'english-input') {
+                 targetDomStatus = dom.micStatus;
+                 targetDomButton = dom.micBtn;
+                 lang = 'en-US';
+             } else { // conversation
+                 targetDomStatus = dom.aiConversationStatus;
+                 targetDomButton = dom.askAiVoiceBtn;
+                 lang = 'ja-JP';
+             }
 
-            recognition.onerror = (event) => {
-                console.error('Speech Recognition Error:', event);
-                let message = '音声認識エラー';
-                if (event.error === 'no-speech') message = '音声が認識できませんでした。';
-                else if (event.error === 'not-allowed') message = 'マイクの使用が許可されていません。';
-                dom.micStatus.textContent = message;
-            };
+             recognition.lang = lang;
+             
+             recognition.onstart = () => {
+                 isRecognizing = true;
+                 targetDomStatus.textContent = '聞いています...';
+                 targetDomButton.classList.add('text-red-500');
+             };
+ 
+             recognition.onresult = async (event) => {
+                 const transcript = event.results[0][0].transcript.trim();
+                 if (type === 'english-input') {
+                     dom.englishInput.value = transcript;
+                 } else if (conversationContext && transcript) {
+                     targetDomStatus.textContent = 'AIが考えています...';
+                     dom.conversationLog.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-500 text-white rounded-lg px-3 py-2 text-sm">${transcript}</span></div>`;
+                     dom.conversationLog.scrollTop = dom.conversationLog.scrollHeight;
+                     conversationContext.history.push({ role: 'user', parts: [{ text: transcript }] });
 
-            recognition.onend = () => {
-                isRecognizing = false;
-                dom.micStatus.textContent = '';
-                dom.micBtn.classList.remove('text-red-500');
-                recognition = null;
-            };
-            
-            recognition.start();
+                     const { text, audioData, mimeType } = await getAIConversationResponse(conversationContext.history);
+                     
+                     conversationContext.history.push({ role: 'model', parts: [{ text }] });
+                     dom.conversationLog.innerHTML += `<div class="text-left"><span class="inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm">${text}</span></div>`;
+                     dom.conversationLog.scrollTop = dom.conversationLog.scrollHeight;
+                     
+                     playAIAudio(audioData, mimeType);
+                 }
+             };
+ 
+             recognition.onerror = (event) => {
+                 console.error('Speech Recognition Error:', event);
+                 targetDomStatus.textContent = '音声認識エラー';
+             };
+ 
+             recognition.onend = () => {
+                 isRecognizing = false;
+                 if (targetDomStatus.textContent === '聞いています...') {
+                     targetDomStatus.textContent = '';
+                 }
+                 targetDomButton.classList.remove('text-red-500');
+                 if(type === 'english-input'){
+                    targetDomButton.disabled = false;
+                 } else {
+                    // Let playAIAudio re-enable the button
+                 }
+                 recognition = null;
+             };
+             
+             targetDomButton.disabled = true;
+             recognition.start();
         }
 
         function handleReadAloud() { if ('speechSynthesis' in window && dom.japaneseSentence) { speakText(dom.japaneseSentence.textContent, 'ja-JP'); } }
@@ -953,7 +1028,6 @@
             document.getElementById('speak-feedback-btn').onclick = () => speakText(feedback);
             dom.conversationArea.classList.remove('hidden');
             dom.conversationLog.innerHTML = '';
-            dom.followUpInput.value = '';
         }
         function renderManualSrsControls() { const question = activeSentences[currentQuestionIndex]; const stats = questionStats.get(question.ja) || { level: 0 }; dom.manualSrsArea.innerHTML = `<p class="text-sm text-center text-gray-600 mb-2">現在の復習レベル: ${stats.level}</p><div class="flex justify-center gap-4"><button data-adj="-1" class="srs-adj-btn bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200">まだ苦手...</button><button data-adj="1" class="srs-adj-btn bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200">簡単だった!</button></div><p id="srs-adj-feedback" class="text-center text-sm text-blue-600 h-4 mt-2"></p>`; dom.manualSrsArea.classList.remove('hidden'); }
         function renderHistory() { if(!dom.historyList) return; const sortedHistory = [...allTimeHistory].sort((a,b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0)); if (sortedHistory.length === 0) { dom.historyList.innerHTML = '<li class="text-center text-gray-500">まだ学習履歴がありません。</li>'; return; } const fH = sortedHistory.filter(i => currentFilter === 'all' || (currentFilter === 'correct' && i.isCorrect) || (currentFilter === 'incorrect' && !i.isCorrect)); if (fH.length === 0) { dom.historyList.innerHTML = `<li class="text-center text-gray-500">この条件に合う履歴はありません。</li>`; return; } dom.historyList.innerHTML = fH.map(i => `<li class="p-4 border rounded-lg ${i.isCorrect ? 'bg-green-50' : 'bg-red-50'}"><p class="text-sm text-gray-500 mb-1">${i.timestamp ? new Date(i.timestamp.seconds * 1000).toLocaleString('ja-JP') : ''}</p><p class="font-semibold mb-2">${i.japanese}</p><p>あなたの回答: <span class="font-normal text-gray-700">${i.userAnswer}</span></p><div class="p-2 mt-2 rounded ${i.isCorrect ? 'bg-green-100' : 'bg-red-100'}"><p class="text-sm font-medium">${i.isCorrect ? '✓ 正解' : '✗ 不正解'}: ${i.feedback}</p></div></li>`).join(''); }
@@ -1059,4 +1133,3 @@
     </script>
 </body>
 </html>
-�
