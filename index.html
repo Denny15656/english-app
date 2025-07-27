@@ -148,8 +148,7 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.10";
-        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical)
+        const APP_VERSION = "3.11";
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
             readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
@@ -186,7 +185,17 @@
         let audioCtx;
         let customProblemSets = [];
 
-        // ... (populateUI and other UI functions are identical to v3.2)
+        function log(message) {
+            const logContainer = document.getElementById('diagnostic-log');
+            if (logContainer) {
+                const p = document.createElement('p');
+                p.textContent = `> ${message}`;
+                logContainer.appendChild(p);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+            console.log(message);
+        }
+
         function populateUI() {
             document.getElementById('settings-modal').innerHTML = `<div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md"><h3 class="text-xl font-bold mb-6">設定</h3><div class="space-y-6"><div><label for="max-questions-input" class="block text-sm font-medium text-gray-700 mb-1">1セッションの最大問題数</label><input type="number" id="max-questions-input" min="5" max="100" class="w-full p-2 border border-gray-300 rounded-lg"><p class="text-xs text-gray-500 mt-1">一度に学習する問題の数を設定します。(5〜100)</p></div><div><label class="block text-sm font-medium text-gray-700 mb-2">カスタム問題の出題順</label><div class="flex space-x-4"><label class="inline-flex items-center"><input type="radio" name="question-order" value="random" class="form-radio text-blue-600"> <span class="ml-2">ランダム</span></label><label class="inline-flex items-center"><input type="radio" name="question-order" value="in-order" class="form-radio text-blue-600" checked> <span class="ml-2">ファイル順</span></label></div></div></div><div class="mt-8 flex justify-end space-x-3"><button id="settings-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">キャンセル</button><button id="settings-save-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">保存</button></div></div>`;
             document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2 relative">📅 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
@@ -254,6 +263,7 @@
                 authContainer: document.getElementById('auth-container'),
                 googleSigninBtn: document.getElementById('google-signin-btn'),
                 authError: document.getElementById('auth-error'),
+                diagnosticLog: document.getElementById('diagnostic-log'),
                 mainAppWrapper: document.getElementById('main-app-wrapper'),
                 userIdDisplay: document.getElementById('user-id-display'),
                 streakDisplay: document.getElementById('streak-display'),
@@ -341,6 +351,7 @@
         }
 
         async function initializeAppAndAuth() {
+            log('Initializing Firebase...');
             // --- 重要：公開サイト用のFirebase設定 ---
             const firebaseConfig = {
               apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
@@ -355,11 +366,14 @@
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
+            log('Firebaseの初期化に成功');
 
             return new Promise((resolve, reject) => {
+                log('認証状態を確認中...');
                 const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                    unsubscribe(); // Stop listening after first check to avoid re-triggering
+                    unsubscribe(); 
                     if (user) {
+                        log(`ユーザーを認識しました: ${user.uid}`);
                         userId = user.uid;
                         dom.authContainer.classList.add('hidden');
                         dom.mainAppWrapper.classList.remove('hidden');
@@ -368,11 +382,15 @@
                         await loadAllUserData();
                         resolve(user);
                     } else {
+                        log('ユーザーはログインしていません。ログイン画面を表示します。');
                         dom.appLoader.classList.add('hidden');
                         dom.mainAppWrapper.classList.add('hidden');
                         dom.authContainer.classList.remove('hidden');
                     }
-                }, reject);
+                }, (error) => {
+                    log(`認証エラー: ${error.message}`);
+                    reject(error);
+                });
             });
         }
 
@@ -383,7 +401,9 @@
             dom.authVersionDisplay.textContent = `v${APP_VERSION}`;
 
             try {
+                log('DOMの読み込み完了');
                 await initializeAppAndAuth();
+                log('初期化と認証が完了');
                 
                 loadSettings();
                 initializeAudio();
@@ -395,16 +415,20 @@
                
             } catch(error) {
                  console.error("Initialization failed:", error);
+                 log(`致命的なエラー: ${error.message}`);
                  const appLoader = document.getElementById('app-loader');
                  if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 text-red-500">${error.message}</div>`;
             }
         });
         
         async function signInWithGoogle() {
+            log('Googleサインインを開始...');
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
+                log('Googleサインイン成功');
             } catch (error) {
+                log(`Googleサインインエラー: ${error.code} - ${error.message}`);
                 console.error("Google Sign-In Error:", error);
                 if (dom.authError) dom.authError.textContent = `サインインエラー: ${error.code}`;
             }
@@ -645,6 +669,7 @@
         
         async function loadAllUserData() {
             if (!userId) return;
+            log('ユーザーデータの読み込みを開始...');
             const profileDocRef = doc(getCollectionRef('profile'), 'main');
             const profileSnap = await getDoc(profileDocRef);
             updateStreak(profileSnap.exists() ? profileSnap.data() : null);
@@ -667,6 +692,7 @@
                 customProblemSets = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()}));
                 renderProblemSetList();
             });
+            log('ユーザーデータの読み込み完了');
         }
         
         async function updateQuestionSRS(question, isCorrect, adjustment = null) {
@@ -847,7 +873,3 @@
     </script>
 </body>
 </html>
-
-```
-My actual query is:
-相変わらずサインイン画面で何も変わり
