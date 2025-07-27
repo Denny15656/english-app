@@ -3,73 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI英作文練習アプリ - 間隔反復システム</title>
+    <title>AI英作文練習アプリ - 認証テスト</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 140px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 0;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -70px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-        .review-count {
-            position: absolute;
-            top: -5px;
-            right: -8px;
-            background-color: #ef4444;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: bold;
-            line-height: 1;
-        }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
-        }
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -83,166 +23,52 @@
         <div class="text-center p-8 bg-white shadow-xl rounded-2xl max-w-md w-full">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI 英作文練習アプリ</h1>
             <p id="auth-version-display" class="text-gray-400 text-xs mt-1"></p>
-            <p class="text-gray-600 mt-4 mb-8">Googleアカウントでログインして、学習を始めましょう。<br>どの端末からでも学習データを引き継げます。</p>
+            <p class="text-gray-600 mt-4 mb-8">Googleアカウントでログインしてください。</p>
             <button id="google-signin-btn" class="bg-white text-gray-700 font-semibold py-3 px-6 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 flex items-center justify-center w-full">
                 <svg class="w-6 h-6 mr-3" viewBox="0 0 48 48"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g></svg>
                 Googleでサインイン
             </button>
-            <p id="auth-error" class="text-red-500 text-sm mt-4 h-4"></p>
+            <div id="diagnostic-log" class="mt-6 p-4 bg-gray-100 text-left text-xs text-gray-500 rounded-lg max-h-40 overflow-y-auto">
+                <p class="font-bold mb-2">診断ログ:</p>
+            </div>
         </div>
     </div>
 
     <div id="main-app-wrapper" class="hidden">
-        <div class="container mx-auto p-4 md:p-8 max-w-3xl">
-            <header class="text-center mb-8 relative">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI 英作文練習アプリ</h1>
-                <p class="text-gray-600 mt-2">間隔反復システムで効率的に学習しよう</p>
-                <div id="streak-display" class="absolute top-0 left-0 flex items-center bg-orange-100 text-orange-600 font-bold px-3 py-1 rounded-full text-lg hidden">
-                    🔥 <span id="streak-count" class="ml-1">0</span>
+        <div class="container mx-auto p-4 md:p-8 max-w-md">
+             <div class="text-center p-8 bg-white shadow-xl rounded-2xl w-full">
+                <h1 class="text-2xl font-bold text-green-600 mb-4">ログイン成功！</h1>
+                <div id="user-info" class="flex items-center text-sm text-gray-700 justify-center">
+                    <img id="user-avatar" class="w-10 h-10 rounded-full mr-3">
+                    <span id="user-name" class="font-semibold"></span>
                 </div>
-                <div class="absolute top-0 right-0 flex items-center space-x-2">
-                    <div id="user-info" class="flex items-center text-sm text-gray-500 mr-2">
-                        <img id="user-avatar" class="w-8 h-8 rounded-full mr-2 hidden">
-                        <span id="user-name"></span>
-                    </div>
-                    <div class="tooltip">
-                        <button id="auto-read-aloud-toggle" class="p-2 rounded-full hover:bg-gray-200 transition text-gray-500 hover:text-gray-800"></button>
-                        <span class="tooltiptext">自動読み上げ</span>
-                    </div>
-                    <div class="tooltip">
-                        <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 transition text-gray-500 hover:text-gray-800">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01-.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106A1.532 1.532 0 0111.49 3.17zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
-                        </button>
-                        <span class="tooltiptext">設定</span>
-                    </div>
-                    <div class="tooltip">
-                        <button id="signout-btn" class="p-2 rounded-full hover:bg-gray-200 transition text-gray-500 hover:text-gray-800">
-                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V5h10a1 1 0 100-2H3zm12.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 13H9a1 1 0 110-2h7.586l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                        </button>
-                         <span class="tooltiptext">ログアウト</span>
-                    </div>
-                </div>
-            </header>
-            
-            <div id="settings-modal" class="modal-overlay hidden"></div>
-            <div id="delete-confirm-modal" class="modal-overlay hidden"></div>
-
-            <!-- Main Content Area -->
-            <div id="content-area">
-                <section id="mode-selection" class="bg-white p-6 rounded-2xl shadow-lg mb-8"></section>
-                <section id="custom-set-manager" class="bg-white p-6 rounded-2xl shadow-lg mb-8 hidden"></section>
-                <section id="set-detail-view" class="bg-white p-6 rounded-2xl shadow-lg mb-8 hidden"></section>
-                <main id="app-container" class="bg-white p-6 rounded-2xl shadow-lg mb-8 hidden"></main>
-                <section id="history-section" class="bg-white p-6 rounded-2xl shadow-lg"></section>
-            </div>
-
-            <footer class="text-center text-xs text-gray-400 mt-4" id="version-display"></footer>
+                <p class="text-xs text-gray-400 mt-2 break-all" id="user-id-display"></p>
+                <button id="signout-btn" class="mt-6 bg-red-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors">
+                    ログアウト
+                </button>
+                <p id="version-display" class="text-xs text-gray-400 mt-4"></p>
+             </div>
         </div>
     </div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const APP_VERSION = "3.16";
-        // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical)
-        const ICONS = {
-            readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
-            readAloudOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.95 12.95a1 1 0 01-1.414 1.414L10 11.414l-1.536 1.536a1 1 0 11-1.414-1.414L8.586 10 7.05 8.464a1 1 0 011.414-1.414L10 8.586l1.536-1.536a1 1 0 111.414 1.414L11.414 10l1.536 1.536z" clip-rule="evenodd" /></svg>`,
-            deleteIcon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg>`
-        };
-        const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60, 120, 240]; 
-        const MASTERED_LEVEL = 5; 
-        const defaultSentences = [
-            { ja: "このアプリは英語を学ぶのにとても役立ちます。", en: "This app is very helpful for learning English." },
-            { ja: "昨日は友達と映画を見に行きました。", en: "I went to see a movie with my friend yesterday." },
-            { ja: "もし時間があれば、この本を読むべきです。", en: "If you have time, you should read this book." },
-        ];
-        const englishTips = [
-            "'advice'は不可算名詞なので、'an advice'ではなく'a piece of advice'と言います。",
-            "'very'は形容詞を修飾しますが、'much'は動詞を修飾します。'I like it very much.'",
-            "'borrow'は「借りる」、'lend'は「貸す」です。主語に注意しましょう。",
-            "未来のことでも、確定している予定は現在進行形で表現できます。'I'm leaving tomorrow.'",
-            "'fewer'は数えられる名詞に、'less'は数えられない名詞に使います。",
-            "英語のリスニング力を上げるには、たくさん聞くことが一番の近道です。"
-        ];
+        
+        const APP_VERSION = "3.17 (診断モード)";
 
         let dom = {};
-        let app, auth, db;
-        let userId = null;
-        let isAutoReadAloud = true;
-        let settings = { maxQuestionsPerSession: 20, customQuestionOrder: 'in-order' };
-        let currentQuestionIndex = 0;
-        let allTimeHistory = [];
-        let questionStats = new Map();
-        let currentFilter = 'all';
-        let activeSentences = [];
-        let recognition = null;
-        let isRecognizing = false;
-        let audioCtx;
-        let customProblemSets = [];
+        let auth;
 
-        // ... (populateUI and other UI functions are identical to v3.2)
-        function populateUI() {
-            document.getElementById('settings-modal').innerHTML = `<div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md"><h3 class="text-xl font-bold mb-6">設定</h3><div class="space-y-6"><div><label for="max-questions-input" class="block text-sm font-medium text-gray-700 mb-1">1セッションの最大問題数</label><input type="number" id="max-questions-input" min="5" max="100" class="w-full p-2 border border-gray-300 rounded-lg"><p class="text-xs text-gray-500 mt-1">一度に学習する問題の数を設定します。(5〜100)</p></div><div><label class="block text-sm font-medium text-gray-700 mb-2">カスタム問題の出題順</label><div class="flex space-x-4"><label class="inline-flex items-center"><input type="radio" name="question-order" value="random" class="form-radio text-blue-600"> <span class="ml-2">ランダム</span></label><label class="inline-flex items-center"><input type="radio" name="question-order" value="in-order" class="form-radio text-blue-600" checked> <span class="ml-2">ファイル順</span></label></div></div></div><div class="mt-8 flex justify-end space-x-3"><button id="settings-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">キャンセル</button><button id="settings-save-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">保存</button></div></div>`;
-            document.getElementById('mode-selection').innerHTML = `<h2 class="text-2xl font-bold mb-4 text-center">学習モードを選択</h2><div class="grid md:grid-cols-3 gap-6"><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2 relative">📅 今日の復習<span id="review-count-badge" class="review-count hidden">0</span></h3><p class="text-sm text-gray-600 mb-3 flex-grow">忘却曲線に基づき、復習時期が来た問題を解きます。</p><button id="start-review-quiz-btn" class="w-full mt-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>復習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">🚀 新しい問題を学ぶ</h3><p class="text-sm text-gray-600 mb-3 flex-grow">まだ学習したことのない、デフォルト問題に挑戦します。</p><button id="start-default-quiz-btn" class="w-full mt-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">学習を開始</button></div><div class="border p-4 rounded-lg flex flex-col"><h3 class="font-semibold text-lg mb-2">📚 カスタム問題集</h3><p class="text-sm text-gray-600 mb-3 flex-grow">作成した問題集を管理・学習します。</p><button id="manage-custom-sets-btn" class="w-full mt-auto bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700">問題集を管理</button></div></div>`;
-            document.getElementById('app-container').innerHTML = `<div id="loading-screen" class="hidden justify-center items-center py-10"><div class="text-center"><div class="loader mx-auto"></div><p class="mt-4 text-gray-600">AIが採点中です...</p><div id="loading-tip" class="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-700 w-full max-w-md mx-auto"></div></div></div><div id="quiz-section"><div class="flex justify-between items-center mb-4"><p id="progress-counter" class="text-sm font-medium"></p></div><div class="bg-gray-50 p-4 rounded-lg mb-4"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-600 mb-1">日本語</p><p id="japanese-sentence" class="text-lg font-semibold"></p></div><button id="read-aloud-btn" class="p-2 rounded-full hover:bg-gray-200" title="読み上げ"></button></div></div><div id="model-answer-container" class="hidden bg-blue-50 p-4 rounded-lg mb-4"><p class="text-sm text-blue-600 mb-1">模範解答</p><p id="model-answer" class="text-md font-medium text-blue-800"></p></div><div><label for="english-input" class="block text-sm font-medium">あなたの回答</label><div class="relative"><textarea id="english-input" rows="4" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500"></textarea><button id="mic-btn" class="absolute top-1/2 right-3 -translate-y-1/2 p-2 text-gray-500" title="音声入力"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg></button></div><p id="mic-status" class="text-xs h-4 mt-1"></p></div><button id="submit-btn" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">採点する</button><div id="result-area" class="mt-6 hidden"></div><div id="manual-srs-area" class="mt-4 hidden"></div></div><div id="finish-screen" class="hidden text-center py-10"><h2 id="finish-title" class="text-2xl font-bold text-green-600"></h2><p id="finish-message" class="mt-2"></p><div class="flex justify-center mt-6"><button id="back-to-mode-select-btn" class="bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700">モード選択に戻る</button></div></div>`;
-            document.getElementById('history-section').innerHTML = `<h2 class="text-2xl font-bold mb-4">学習統計</h2><div id="stats-area" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center"><div><p class="text-2xl font-bold text-blue-600" id="stat-learning">0</p><p class="text-sm text-gray-500">学習中</p></div><div><p class="text-2xl font-bold text-green-600" id="stat-mastered">0</p><p class="text-sm text-gray-500">習得済み</p></div><div><p class="text-2xl font-bold text-yellow-600" id="stat-due">0</p><p class="text-sm text-gray-500">今日復習</p></div><div><p class="text-2xl font-bold text-gray-600" id="stat-total">0</p><p class="text-sm text-gray-500">全問題数</p></div></div><h3 class="text-xl font-bold mb-4">全回答履歴</h3><div id="history-filters" class="flex flex-wrap gap-2 mb-4"><button data-filter="all" class="history-filter-btn bg-blue-200 text-blue-800 py-1 px-3 rounded-full text-sm">すべて</button><button data-filter="correct" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">正解のみ</button><button data-filter="incorrect" class="history-filter-btn bg-gray-200 text-gray-800 py-1 px-3 rounded-full text-sm">不正解のみ</button></div><ul id="history-list" class="space-y-4"></ul>`;
-            document.getElementById('custom-set-manager').innerHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">カスタム問題集の管理</h2>
-                    <button id="back-to-mode-from-manager-btn" class="text-sm text-blue-600 hover:underline">← モード選択に戻る</button>
-                </div>
-                <div class="bg-gray-50 p-6 rounded-xl border mb-8">
-                    <h3 class="text-lg font-semibold mb-4">新しい問題集をアップロード</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="set-title-input" class="block text-sm font-medium text-gray-700">問題集のタイトル</label>
-                            <input type="text" id="set-title-input" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" placeholder="例：ビジネス英会話 Chapter 1">
-                        </div>
-                        <div>
-                            <label for="csv-upload" class="block text-sm font-medium text-gray-700">CSVファイル</label>
-                            <input type="file" id="csv-upload" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".csv">
-                        </div>
-                        <button id="upload-set-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400" disabled>アップロードして保存</button>
-                        <p id="upload-status" class="text-center text-sm h-4"></p>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">保存済みの問題集</h3>
-                    <div id="custom-set-list" class="space-y-3">
-                        <p class="text-gray-500">問題集がありません。</p>
-                    </div>
-                </div>`;
-            document.getElementById('set-detail-view').innerHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <h2 id="set-detail-title" class="text-2xl font-bold truncate"></h2>
-                    <button id="back-to-manager-from-detail-btn" class="text-sm text-blue-600 hover:underline">← 問題集一覧に戻る</button>
-                </div>
-                <button id="start-quiz-from-detail-btn" class="w-full mb-6 bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">この問題集で学習を始める</button>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日本語</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">英語（模範解答）</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">正答率</th>
-                            </tr>
-                        </thead>
-                        <tbody id="set-detail-table-body" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>`;
-            document.getElementById('delete-confirm-modal').innerHTML = `
-                <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm text-center">
-                    <h3 class="text-xl font-bold mb-4">確認</h3>
-                    <p id="delete-confirm-message" class="mb-6 text-gray-600"></p>
-                    <div class="flex justify-center space-x-4">
-                        <button id="delete-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition">いいえ</button>
-                        <button id="delete-confirm-btn" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition">はい、削除します</button>
-                    </div>
-                </div>`;
+        function log(message) {
+            const logContainer = document.getElementById('diagnostic-log');
+            if (logContainer) {
+                const p = document.createElement('p');
+                p.textContent = `> ${new Date().toLocaleTimeString()}: ${message}`;
+                logContainer.appendChild(p);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+            console.log(message);
         }
         
         function assignDomElements() {
@@ -250,78 +76,18 @@
                 appLoader: document.getElementById('app-loader'),
                 authContainer: document.getElementById('auth-container'),
                 googleSigninBtn: document.getElementById('google-signin-btn'),
-                authError: document.getElementById('auth-error'),
                 mainAppWrapper: document.getElementById('main-app-wrapper'),
-                userIdDisplay: document.getElementById('user-id-display'),
-                streakDisplay: document.getElementById('streak-display'),
-                streakCount: document.getElementById('streak-count'),
-                userInfo: document.getElementById('user-info'),
+                authVersionDisplay: document.getElementById('auth-version-display'),
                 userAvatar: document.getElementById('user-avatar'),
                 userName: document.getElementById('user-name'),
+                userIdDisplay: document.getElementById('user-id-display'),
                 signoutBtn: document.getElementById('signout-btn'),
-                settingsBtn: document.getElementById('settings-btn'),
-                settingsModal: document.getElementById('settings-modal'),
-                deleteConfirmModal: document.getElementById('delete-confirm-modal'),
-                modeSelection: document.getElementById('mode-selection'),
-                appContainer: document.getElementById('app-container'),
-                historySection: document.getElementById('history-section'),
                 versionDisplay: document.getElementById('version-display'),
-                authVersionDisplay: document.getElementById('auth-version-display'),
-                contentArea: document.getElementById('content-area'),
-                customSetManager: document.getElementById('custom-set-manager'),
-                setDetailView: document.getElementById('set-detail-view'),
-                maxQuestionsInput: document.getElementById('max-questions-input'),
-                settingsSaveBtn: document.getElementById('settings-save-btn'),
-                settingsCancelBtn: document.getElementById('settings-cancel-btn'),
-                startReviewQuizBtn: document.getElementById('start-review-quiz-btn'),
-                reviewCountBadge: document.getElementById('review-count-badge'),
-                startDefaultQuizBtn: document.getElementById('start-default-quiz-btn'),
-                manageCustomSetsBtn: document.getElementById('manage-custom-sets-btn'),
-                autoReadAloudToggle: document.getElementById('auto-read-aloud-toggle'),
-                loadingScreen: document.getElementById('loading-screen'),
-                loadingTip: document.getElementById('loading-tip'),
-                quizSection: document.getElementById('quiz-section'),
-                progressCounter: document.getElementById('progress-counter'),
-                japaneseSentence: document.getElementById('japanese-sentence'),
-                readAloudBtn: document.getElementById('read-aloud-btn'),
-                modelAnswerContainer: document.getElementById('model-answer-container'),
-                modelAnswer: document.getElementById('model-answer'),
-                englishInput: document.getElementById('english-input'),
-                micBtn: document.getElementById('mic-btn'),
-                micStatus: document.getElementById('mic-status'),
-                submitBtn: document.getElementById('submit-btn'),
-                resultArea: document.getElementById('result-area'),
-                manualSrsArea: document.getElementById('manual-srs-area'),
-                finishScreen: document.getElementById('finish-screen'),
-                finishTitle: document.getElementById('finish-title'),
-                finishMessage: document.getElementById('finish-message'),
-                backToModeSelectBtn: document.getElementById('back-to-mode-select-btn'),
-                stats: {
-                    learning: document.getElementById('stat-learning'),
-                    mastered: document.getElementById('stat-mastered'),
-                    due: document.getElementById('stat-due'),
-                    total: document.getElementById('stat-total'),
-                },
-                historyFilters: document.getElementById('history-filters'),
-                historyList: document.getElementById('history-list'),
-                backToModeFromManagerBtn: document.getElementById('back-to-mode-from-manager-btn'),
-                setTitleInput: document.getElementById('set-title-input'),
-                csvUpload: document.getElementById('csv-upload'),
-                uploadSetBtn: document.getElementById('upload-set-btn'),
-                uploadStatus: document.getElementById('upload-status'),
-                customSetList: document.getElementById('custom-set-list'),
-                setDetailTitle: document.getElementById('set-detail-title'),
-                backToManagerFromDetailBtn: document.getElementById('back-to-manager-from-detail-btn'),
-                startQuizFromDetailBtn: document.getElementById('start-quiz-from-detail-btn'),
-                setDetailTableBody: document.getElementById('set-detail-table-body'),
-                deleteConfirmMessage: document.getElementById('delete-confirm-message'),
-                deleteCancelBtn: document.getElementById('delete-cancel-btn'),
-                deleteConfirmBtn: document.getElementById('delete-confirm-btn'),
             };
         }
-        
+
         async function initializeAppAndAuth() {
-            // --- 重要：公開サイト用のFirebase設定 ---
+            log('Firebaseの初期化を開始...');
             const firebaseConfig = {
               apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
               authDomain: "english-app-e5b4d.firebaseapp.com",
@@ -332,494 +98,74 @@
               measurementId: "G-XGBJ9S1RVT"
             };
             
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            return new Promise((resolve, reject) => {
-                const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                    unsubscribe(); 
-                    if (user) {
-                        userId = user.uid;
-                        dom.authContainer.classList.add('hidden');
-                        dom.mainAppWrapper.classList.remove('hidden');
-                        if (user.photoURL) { dom.userAvatar.src = user.photoURL; dom.userAvatar.classList.remove('hidden'); }
-                        dom.userName.textContent = user.displayName || user.email;
-                        await loadAllUserData();
-                        resolve(user);
-                    } else {
-                        dom.appLoader.classList.add('hidden');
-                        dom.mainAppWrapper.classList.add('hidden');
-                        dom.authContainer.classList.remove('hidden');
-                    }
-                }, reject);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            populateUI();
-            assignDomElements();
-            dom.versionDisplay.textContent = `Version ${APP_VERSION}`;
-            dom.authVersionDisplay.textContent = `v${APP_VERSION}`;
-
             try {
-                await initializeAppAndAuth();
-                
-                loadSettings();
-                initializeAudio();
-                initializeSpeechRecognition();
-                setupEventListeners();
-                
-                dom.appLoader.classList.add('opacity-0');
-                setTimeout(() => dom.appLoader.remove(), 300);
-               
-            } catch(error) {
-                 console.error("Initialization failed:", error);
-                 const appLoader = document.getElementById('app-loader');
-                 if(appLoader) appLoader.innerHTML = `<div class="text-center p-8 text-red-500">${error.message}</div>`;
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                log('Firebaseの初期化に成功');
+            } catch (error) {
+                log(`Firebaseの初期化に失敗: ${error.message}`);
+                throw error;
             }
-        });
+        }
         
         async function signInWithGoogle() {
+            log('Googleサインインボタンがクリックされました');
+            log('ポップアップを開始...');
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
+                log('Googleサインイン成功');
             } catch (error) {
+                log(`Googleサインインエラー: ${error.code} - ${error.message}`);
                 console.error("Google Sign-In Error:", error);
-                if (dom.authError) dom.authError.textContent = `サインインエラー: ${error.code}`;
             }
         }
         
         async function signOutUser() {
             try {
                 await signOut(auth);
-                window.location.reload();
+                log('ログアウト成功');
             } catch (error) {
+                log(`ログアウトエラー: ${error.message}`);
                 console.error("Sign-Out Error:", error);
             }
         }
 
-        function setupEventListeners() {
-            dom.settingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
-            dom.googleSigninBtn.addEventListener('click', signInWithGoogle);
-            dom.signoutBtn.addEventListener('click', signOutUser);
-            
-            document.body.addEventListener('click', async (e) => {
-                const button = e.target.closest('button');
-                if (!button) return;
+        async function main() {
+            assignDomElements();
+            dom.authVersionDisplay.textContent = `v${APP_VERSION}`;
+            dom.versionDisplay.textContent = `v${APP_VERSION}`;
+            log('DOMの読み込み完了');
 
-                const buttonId = button.id;
-                
-                if (button.classList.contains('srs-adj-btn')) {
-                    button.closest('#manual-srs-area').querySelectorAll('button').forEach(b => b.disabled = true);
-                    const adjustment = parseInt(button.dataset.adj, 10);
-                    const question = activeSentences[currentQuestionIndex];
-                    await updateQuestionSRS(question, null, adjustment);
-                    currentQuestionIndex++;
-                    showQuestion();
-                    return;
-                }
-
-                if (button.classList.contains('delete-set-btn')) {
-                    const setId = button.dataset.setId;
-                    const setTitle = button.dataset.setTitle;
-                    dom.deleteConfirmMessage.textContent = `「${setTitle}」を本当に削除しますか？この操作は取り消せません。`;
-                    dom.deleteConfirmBtn.dataset.setId = setId;
-                    dom.deleteConfirmModal.classList.remove('hidden');
-                }
-                
-                switch (buttonId) {
-                    case 'settings-cancel-btn': dom.settingsModal.classList.add('hidden'); break;
-                    case 'settings-save-btn': saveSettings(); break;
-                    case 'delete-cancel-btn': dom.deleteConfirmModal.classList.add('hidden'); break;
-                    case 'delete-confirm-btn': handleDeleteSet(button.dataset.setId); break;
-                    case 'auto-read-aloud-toggle':
-                        isAutoReadAloud = !isAutoReadAloud;
-                        button.innerHTML = isAutoReadAloud ? ICONS.readAloudOn : ICONS.readAloudOff;
-                        break;
-                    case 'manage-custom-sets-btn': showScreen('custom-set-manager'); break;
-                    case 'back-to-mode-from-manager-btn':
-                    case 'back-to-mode-select-btn':
-                        showScreen('mode-selection');
-                        break;
-                    case 'back-to-manager-from-detail-btn': showScreen('custom-set-manager'); break;
-                    case 'start-default-quiz-btn': startQuiz(defaultSentences.filter(q => !questionStats.has(q.ja)), 'default'); break;
-                    case 'start-review-quiz-btn': {
-                        const now = new Date();
-                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                        const dueSentences = Array.from(questionStats.values())
-                            .filter(stat => stat.nextReviewDate?.toDate() <= today)
-                            .map(stat => allKnownSentences.get(stat.ja))
-                            .filter(Boolean);
-                        startQuiz(dueSentences, 'review');
-                        break;
-                    }
-                    case 'upload-set-btn': handleProblemSetUpload(); break;
-                    case 'start-quiz-from-detail-btn': {
-                        const setId = button.dataset.setId;
-                        const problemSet = customProblemSets.find(p => p.id === setId);
-                        if (problemSet && problemSet.sentences) startQuiz(problemSet.sentences, 'custom');
-                        break;
-                    }
-                    case 'submit-btn': handleSubmit(); break;
-                    case 'mic-btn': 
-                         if (isRecognizing) {
-                            if(recognition) recognition.stop();
-                        } else {
-                            startNewRecognition();
-                        }
-                        break;
-                    case 'read-aloud-btn': handleReadAloud(); break;
-                }
-                
-                if (button.classList.contains('view-set-detail-btn')) viewSetDetails(button.dataset.setId);
-                if (button.matches('.history-filter-btn')) {
-                    currentFilter = button.dataset.filter;
-                    document.querySelectorAll('.history-filter-btn').forEach(b => { 
-                        b.classList.remove('bg-blue-200', 'text-blue-800');
-                        b.classList.add('bg-gray-200', 'text-gray-800'); 
-                    });
-                    button.classList.add('bg-blue-200', 'text-blue-800');
-                    button.classList.remove('bg-gray-200', 'text-gray-800');
-                    renderHistory();
-                }
-            });
-            
-            document.body.addEventListener('change', (e) => {
-                if(e.target.id === 'csv-upload' || e.target.id === 'set-title-input') {
-                    const title = document.getElementById('set-title-input').value.trim();
-                    const file = document.getElementById('csv-upload').files[0];
-                    document.getElementById('upload-set-btn').disabled = !(title && file);
-                }
-            });
-        }
-        
-        async function handleSubmit() {
-            const userAnswer = dom.englishInput.value.trim();
-            if (!userAnswer) return;
-            dom.submitBtn.disabled = true;
-            dom.englishInput.disabled = true;
-
-            const randomTip = englishTips[Math.floor(Math.random() * englishTips.length)];
-            dom.loadingTip.innerHTML = `<b class="font-bold">ワンポイント英語豆知識💡</b><br>${randomTip}`;
-
-            dom.quizSection.classList.add('hidden');
-            dom.loadingScreen.classList.remove('hidden');
-
-            const question = activeSentences[currentQuestionIndex];
-            const result = await getAIEvaluation(question.ja, question.en, userAnswer);
-
-            dom.loadingScreen.classList.add('hidden');
-            dom.quizSection.classList.remove('hidden');
-            renderResult(result);
-            renderManualSrsControls();
-            playSound(result.isCorrect ? 'correct' : 'incorrect');
-            await addDoc(getCollectionRef('history'), { japanese: question.ja, userAnswer, ...result, timestamp: serverTimestamp() });
-            await updateQuestionSRS(question, result.isCorrect);
-            dom.submitBtn.classList.add('hidden');
-        }
-
-        async function getAIEvaluation(japanese, modelAnswer, userAnswer) {
-            const prompt = `あなたは優秀な英語の先生です。以下の日本語の文章を英訳する課題において、ユーザーが提出した英文を評価してください。\n# 指示\n- ユーザーの英文が、日本語の文章の意味を正確に反映しているか評価してください。\n- 文法的に自然で正しい英語かも評価してください。\n- 模範解答と完全に一致している必要はありません。同義語や別の構文が使われていても、意味と文法が正しければ「正解」としてください。\n- ユーザーの解答は音声入力を想定しているため、句読点の欠如に起因する文法的な指摘（例：文が繋がっているなど）は一切しないでください。\n- 文頭の大文字・小文字、文末のピリオド(.)や疑問符(?)、文中のカンマ(,)の有無は採点に影響させないでください。これらは完全に無視してください。\n- 評価結果と、なぜそのように評価したかの短いフィードバックをJSON形式で返してください。フィードバックでは、句読点に関する言及は一切しないでください。\n# 情報\n- 日本語原文: ${japanese}\n- 模範解答: ${modelAnswer}\n- ユーザーの解答: ${userAnswer}`;
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: { isCorrect: { "type": "BOOLEAN" }, feedback: { "type": "STRING" } },
-                        required: ["isCorrect", "feedback"]
-                    }
-                }
-            };
-            const apiKey = "AIzaSyDShPbHlyGuE08dXQOFMkVa-mr2P50D_8c";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            
             try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({ error: { message: "不明なAPIエラー" } }));
-                    throw new Error(`APIリクエスト失敗: ${response.status} - ${errorBody.error?.message || '詳細不明'}`);
-                }
-                const result = await response.json();
-                const part = result?.candidates?.[0]?.content?.parts?.[0];
-                if (part && part.text) return JSON.parse(part.text);
-                throw new Error("AIからの応答形式が予期しないものです。");
-            } catch (error) {
-                console.error("Error calling Gemini API:", error);
-                return { isCorrect: false, feedback: `AIによる採点ができませんでした。理由: ${error.message}` };
-            }
-        }
-        
-        function initializeAudio() { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { console.warn("Web Audio API is not supported."); } }
-        function playSound(type) { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); if (type === 'correct') { o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.1); } else { o.type = 'square'; o.frequency.setValueAtTime(220, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(180, audioCtx.currentTime + 0.15); } g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.2); }
-        
-        function initializeSpeechRecognition() {
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-             if (!('SpeechRecognition' in window)) {
-                if(dom.micBtn) dom.micBtn.style.display = 'none';
-            }
-        }
-        
-        function startNewRecognition() {
-            if (!('SpeechRecognition' in window)) {
-                if(dom.micStatus) dom.micStatus.textContent = "音声入力に非対応です。";
-                return;
-            }
-            
-            recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            
-            let fullTranscript = '';
-
-            recognition.onstart = () => {
-                isRecognizing = true;
-                dom.micStatus.textContent = '音声入力中... 再度クリックで終了';
-                dom.micBtn.classList.add('text-red-500');
-                dom.englishInput.value = '';
-            };
-
-            recognition.onresult = (event) => {
-                let currentTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        currentTranscript += event.results[i][0].transcript.trim() + ' ';
+                await initializeAppAndAuth();
+                
+                onAuthStateChanged(auth, (user) => {
+                    dom.appLoader.classList.add('hidden');
+                    if (user) {
+                        log(`認証状態変更: ログイン中 (${user.uid})`);
+                        dom.mainAppWrapper.classList.remove('hidden');
+                        dom.authContainer.classList.add('hidden');
+                        dom.userAvatar.src = user.photoURL;
+                        dom.userName.textContent = user.displayName;
+                        dom.userIdDisplay.textContent = `User ID: ${user.uid}`;
+                    } else {
+                        log('認証状態変更: ログアウト状態');
+                        dom.mainAppWrapper.classList.add('hidden');
+                        dom.authContainer.classList.remove('hidden');
                     }
-                }
-                fullTranscript += currentTranscript;
-                let finalOutput = fullTranscript.trim();
-                if (finalOutput) {
-                    dom.englishInput.value = finalOutput.charAt(0).toUpperCase() + finalOutput.slice(1);
-                }
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Speech Recognition Error:', event);
-                let message = '音声認識エラー';
-                if (event.error === 'no-speech') message = '音声が認識できませんでした。';
-                else if (event.error === 'not-allowed') message = 'マイクの使用が許可されていません。';
-                dom.micStatus.textContent = message;
-            };
-
-            recognition.onend = () => {
-                isRecognizing = false;
-                dom.micStatus.textContent = '';
-                dom.micBtn.classList.remove('text-red-500');
-                recognition = null;
-            };
-            
-            recognition.start();
-        }
-
-        function handleReadAloud() { if ('speechSynthesis' in window && dom.japaneseSentence) { const utterance = new SpeechSynthesisUtterance(dom.japaneseSentence.textContent); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance); } }
-        function getCollectionRef(collectionName) {
-            if (!userId) throw new Error("User not authenticated");
-            return collection(db, 'users', userId, collectionName);
-        }
-        
-        async function loadAllUserData() {
-            if (!userId) return;
-            const profileDocRef = doc(getCollectionRef('profile'), 'main');
-            const profileSnap = await getDoc(profileDocRef);
-            updateStreak(profileSnap.exists() ? profileSnap.data() : null);
-
-            onSnapshot(query(getCollectionRef('questionStats')), snapshot => {
-                const newStats = new Map();
-                snapshot.docs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    newStats.set(data.ja, { id: docSnap.id, ...data });
                 });
-                questionStats = newStats;
-                updateStatsUI();
-                renderProblemSetList(); 
-            });
-            onSnapshot(query(getCollectionRef('history')), snapshot => {
-                allTimeHistory = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()}));
-                if(document.getElementById('history-list')) renderHistory();
-            });
-             onSnapshot(query(getCollectionRef('problemSets')), snapshot => {
-                customProblemSets = snapshot.docs.map(docSnap => ({id: docSnap.id, ...docSnap.data()}));
-                renderProblemSetList();
-            });
-        }
-        
-        async function updateQuestionSRS(question, isCorrect, adjustment = null) {
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const stats = questionStats.get(question.ja) || { ja: question.ja, en: question.en, level: 0, attemptCount: 0, correctCount: 0, createdAt: Timestamp.fromDate(today) };
-            
-            stats.attemptCount = (stats.attemptCount || 0) + 1;
 
-            if (adjustment !== null) {
-                stats.level = Math.max(0, (stats.level || 0) + adjustment);
-            } else if (isCorrect) {
-                stats.level = (stats.level || 0) + 1;
-                stats.correctCount = (stats.correctCount || 0) + 1;
-            } else {
-                stats.level = 0;
-            }
-            
-            const intervalDays = REVIEW_INTERVALS[Math.min(stats.level, REVIEW_INTERVALS.length - 1)];
-            const nextReviewDate = new Date(today);
-            nextReviewDate.setDate(today.getDate() + intervalDays);
-            stats.nextReviewDate = Timestamp.fromDate(nextReviewDate);
-            stats.lastAttempted = Timestamp.fromDate(now);
-            
-            const docRef = stats.id ? doc(getCollectionRef('questionStats'), stats.id) : doc(getCollectionRef('questionStats'));
-            await setDoc(docRef, stats, { merge: true });
-        }
-        async function updateStreak(profileData) { 
-            const now = new Date(); 
-            const todayStr = now.toISOString().split('T')[0]; 
-            const yesterday = new Date(now); 
-            yesterday.setDate(now.getDate() - 1); 
-            const yesterdayStr = yesterday.toISOString().split('T')[0]; 
-            let streak = 1; 
-            if (profileData && profileData.lastLoginDate) { 
-                const lastLoginStr = profileData.lastLoginDate; 
-                if (lastLoginStr === todayStr) streak = profileData.streakCount || 1; 
-                else if (lastLoginStr === yesterdayStr) streak = (profileData.streakCount || 0) + 1; 
-            } 
-            dom.streakDisplay.classList.remove('hidden'); 
-            dom.streakCount.textContent = streak; 
-            const profileDocRef = doc(getCollectionRef('profile'), 'main'); 
-            await setDoc(profileDocRef, { streakCount: streak, lastLoginDate: todayStr }, { merge: true }); 
-        }
-        
-        function loadSettings() { 
-            const savedSettings = localStorage.getItem('engApp.settings'); 
-            if (savedSettings) settings = JSON.parse(savedSettings); 
-            if(dom.maxQuestionsInput) {
-                dom.maxQuestionsInput.value = settings.maxQuestionsPerSession; 
-                const radio = document.querySelector(`input[name="question-order"][value="${settings.customQuestionOrder}"]`);
-                if (radio) radio.checked = true;
+                dom.googleSigninBtn.addEventListener('click', signInWithGoogle);
+                dom.signoutBtn.addEventListener('click', signOutUser);
+
+            } catch(error) {
+                 log(`致命的なエラー: ${error.message}`);
+                 if(dom.appLoader) dom.appLoader.innerHTML = `<div class="p-8 text-center text-red-500">${error.message}</div>`;
             }
         }
-        function saveSettings() { const newMax = parseInt(dom.maxQuestionsInput.value, 10); if (newMax < 5 || newMax > 100) { alert('5から100の数値を入力'); return; } settings.maxQuestionsPerSession = newMax; settings.customQuestionOrder = document.querySelector('input[name="question-order"]:checked').value; localStorage.setItem('engApp.settings', JSON.stringify(settings)); dom.settingsModal.classList.add('hidden'); }
-        
-        function updateStatsUI() { if(!dom.stats.learning) return; const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); let learning = 0, mastered = 0, due = 0; const allKnownJa = new Set([...defaultSentences.map(s=>s.ja), ...Array.from(questionStats.keys())]); questionStats.forEach(stat => { if(stat.level >= MASTERED_LEVEL) mastered++; else learning++; if (stat.nextReviewDate?.toDate() <= today) due++; }); dom.stats.learning.textContent = learning; dom.stats.mastered.textContent = mastered; dom.stats.due.textContent = due; dom.stats.total.textContent = allKnownJa.size; dom.reviewCountBadge.textContent = due; dom.reviewCountBadge.classList.toggle('hidden', due === 0); dom.startReviewQuizBtn.disabled = due === 0; }
-        
-        function startQuiz(sentences, mode) {
-            currentQuestionIndex = 0; 
-            let finalSentences = sentences; 
-            if (mode === 'custom' && settings.customQuestionOrder === 'random') {
-                finalSentences = [...sentences].sort(() => 0.5 - Math.random()); 
-            }
-            activeSentences = finalSentences.slice(0, settings.maxQuestionsPerSession); 
-            if(activeSentences.length === 0){ 
-                showScreen('quiz');
-                dom.quizSection.classList.add('hidden'); 
-                dom.finishScreen.classList.remove('hidden'); 
-                dom.finishTitle.textContent = "問題がありません"; 
-                dom.finishMessage.textContent = "このモードで学習する問題は現在ありません。"; 
-                return; 
-            } 
-            showScreen('quiz');
-            showQuestion(); 
-        }
 
-        function showQuestion() { if (currentQuestionIndex >= activeSentences.length) { dom.quizSection.classList.add('hidden'); dom.finishScreen.classList.remove('hidden'); dom.finishTitle.textContent = "セッション完了！"; dom.finishMessage.textContent = "お疲れ様でした！"; return; } dom.quizSection.classList.remove('hidden'); dom.finishScreen.classList.add('hidden'); dom.loadingScreen.classList.add('hidden'); const q = activeSentences[currentQuestionIndex]; dom.japaneseSentence.textContent = q.ja; dom.englishInput.value = ""; dom.englishInput.disabled = false; dom.submitBtn.disabled = false; dom.submitBtn.classList.remove('hidden'); dom.resultArea.classList.add('hidden'); dom.modelAnswerContainer.classList.add('hidden'); dom.manualSrsArea.classList.add('hidden'); dom.progressCounter.textContent = `問題 ${currentQuestionIndex + 1} / ${activeSentences.length}`; if (isAutoReadAloud) setTimeout(handleReadAloud, 100); }
-        function renderResult({ isCorrect, feedback }) { const rC = isCorrect ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800'; const rT = isCorrect ? '正解！' : 'もう一歩！'; dom.resultArea.innerHTML = `<div class="p-4 rounded-lg border ${rC}"><h3 class="font-bold text-lg mb-2">${rT}</h3><p>${feedback}</p></div>`; dom.resultArea.classList.remove('hidden'); dom.modelAnswerContainer.classList.remove('hidden'); dom.modelAnswer.textContent = activeSentences[currentQuestionIndex].en; }
-        function renderManualSrsControls() { const question = activeSentences[currentQuestionIndex]; const stats = questionStats.get(question.ja) || { level: 0 }; dom.manualSrsArea.innerHTML = `<p class="text-sm text-center text-gray-600 mb-2">現在の復習レベル: ${stats.level}</p><div class="flex justify-center gap-4"><button data-adj="-1" class="srs-adj-btn bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200">まだ苦手...</button><button data-adj="1" class="srs-adj-btn bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200">簡単だった!</button></div><p id="srs-adj-feedback" class="text-center text-sm text-blue-600 h-4 mt-2"></p>`; dom.manualSrsArea.classList.remove('hidden'); }
-        function renderHistory() { if(!dom.historyList) return; const sortedHistory = [...allTimeHistory].sort((a,b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0)); if (sortedHistory.length === 0) { dom.historyList.innerHTML = '<li class="text-center text-gray-500">まだ学習履歴がありません。</li>'; return; } const fH = sortedHistory.filter(i => currentFilter === 'all' || (currentFilter === 'correct' && i.isCorrect) || (currentFilter === 'incorrect' && !i.isCorrect)); if (fH.length === 0) { dom.historyList.innerHTML = `<li class="text-center text-gray-500">この条件に合う履歴はありません。</li>`; return; } dom.historyList.innerHTML = fH.map(i => `<li class="p-4 border rounded-lg ${i.isCorrect ? 'bg-green-50' : 'bg-red-50'}"><p class="text-sm text-gray-500 mb-1">${i.timestamp ? new Date(i.timestamp.seconds * 1000).toLocaleString('ja-JP') : ''}</p><p class="font-semibold mb-2">${i.japanese}</p><p>あなたの回答: <span class="font-normal text-gray-700">${i.userAnswer}</span></p><div class="p-2 mt-2 rounded ${i.isCorrect ? 'bg-green-100' : 'bg-red-100'}"><p class="text-sm font-medium">${i.isCorrect ? '✓ 正解' : '✗ 不正解'}: ${i.feedback}</p></div></li>`).join(''); }
-        
-        async function handleProblemSetUpload() {
-            const title = dom.setTitleInput.value.trim();
-            const file = dom.csvUpload.files[0];
-            if (!title || !file) return;
-
-            dom.uploadSetBtn.disabled = true;
-            dom.uploadStatus.textContent = 'アップロード中...';
-
-            try {
-                const fileContent = await file.text();
-                const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
-                const sentences = lines.map((line, i) => {
-                    const parts = line.split(',');
-                    if (parts.length < 2) throw new Error(`行 ${i + 1} の形式が正しくありません。`);
-                    const ja = parts[0].trim(); const en = parts.slice(1).join(',').trim();
-                    if (!ja || !en) throw new Error(`行 ${i + 1} に空の項目があります。`);
-                    return { ja, en };
-                });
-                
-                if (sentences.length === 0) throw new Error("有効な問題が見つかりませんでした。");
-                
-                const newSet = { title, sentences, createdAt: serverTimestamp(), sentenceCount: sentences.length };
-                await addDoc(getCollectionRef('problemSets'), newSet);
-
-                dom.uploadStatus.textContent = `「${title}」を保存しました！`;
-                dom.setTitleInput.value = '';
-                dom.csvUpload.value = '';
-            } catch (error) {
-                dom.uploadStatus.textContent = `エラー: ${error.message}`;
-                console.error("Upload error:", error);
-            } finally {
-                dom.uploadSetBtn.disabled = false;
-            }
-        }
-        
-        function renderProblemSetList() {
-            const listEl = document.getElementById('custom-set-list');
-            if (!listEl) return;
-            if (customProblemSets.length === 0) {
-                listEl.innerHTML = `<p class="text-gray-500 text-center">まだ問題集がありません。上からアップロードしてください。</p>`;
-                return;
-            }
-            listEl.innerHTML = customProblemSets.sort((a,b) => b.createdAt?.seconds - a.createdAt?.seconds).map(set => {
-                const learnedCount = set.sentences?.filter(s => questionStats.has(s.ja) && questionStats.get(s.ja).level > 0).length || 0;
-                return `
-                <div class="border rounded-lg p-4 flex justify-between items-center">
-                    <div>
-                        <p class="font-semibold">${set.title}</p>
-                        <p class="text-sm text-gray-500">${set.sentenceCount || 0}問中 ${learnedCount}問学習済み</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button class="view-set-detail-btn text-sm bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg hover:bg-blue-200" data-set-id="${set.id}">詳細・学習</button>
-                        <button class="delete-set-btn text-sm bg-red-100 text-red-700 font-semibold p-2 rounded-lg hover:bg-red-200" data-set-id="${set.id}" data-set-title="${set.title}">${ICONS.deleteIcon}</button>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        async function viewSetDetails(setId) {
-            const problemSet = customProblemSets.find(p => p.id === setId);
-            if (!problemSet) return;
-            
-            showScreen('set-detail-view');
-            
-            dom.setDetailTitle.textContent = problemSet.title;
-            dom.setDetailTableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
-            dom.startQuizFromDetailBtn.dataset.setId = setId;
-
-            const sentences = problemSet.sentences || [];
-
-            if (sentences.length > 0) {
-                dom.setDetailTableBody.innerHTML = sentences.map(s => {
-                    const stat = questionStats.get(s.ja);
-                    const accuracy = (stat && stat.attemptCount > 0) ? `${Math.round((stat.correctCount / stat.attemptCount) * 100)}%` : '未挑戦';
-                    return `<tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${s.ja}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.en}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${accuracy === '未挑戦' ? 'text-gray-400' : 'text-green-600'}">${accuracy}</td>
-                    </tr>`;
-                }).join('');
-            } else {
-                dom.setDetailTableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">この問題集には問題がありません。</td></tr>';
-            }
-        }
-        
-        async function handleDeleteSet(setId) {
-            if (!setId) return;
-            try {
-                await deleteDoc(doc(getCollectionRef('problemSets'), setId));
-                dom.deleteConfirmModal.classList.add('hidden');
-            } catch (error) {
-                console.error("Error deleting set:", error);
-                alert("削除中にエラーが発生しました。");
-            }
-        }
+        document.addEventListener('DOMContentLoaded', main);
     </script>
 </body>
 </html>
