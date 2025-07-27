@@ -82,6 +82,7 @@
     <div id="auth-container" class="min-h-screen flex items-center justify-center hidden">
         <div class="text-center p-8 bg-white shadow-xl rounded-2xl max-w-md w-full">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI 英作文練習アプリ</h1>
+            <p id="auth-version-display" class="text-gray-400 text-xs mt-1"></p>
             <p class="text-gray-600 mt-4 mb-8">Googleアカウントでログインして、学習を始めましょう。<br>どの端末からでも学習データを引き継げます。</p>
             <button id="google-signin-btn" class="bg-white text-gray-700 font-semibold py-3 px-6 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 flex items-center justify-center w-full">
                 <svg class="w-6 h-6 mr-3" viewBox="0 0 48 48"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g></svg>
@@ -144,7 +145,7 @@
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, getDoc, Timestamp, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const APP_VERSION = "3.9";
+        const APP_VERSION = "3.10";
         // ... (ICONS, REVIEW_INTERVALS, defaultSentences, etc. are identical)
         const ICONS = {
             readAloudOn: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`,
@@ -265,6 +266,7 @@
                 appContainer: document.getElementById('app-container'),
                 historySection: document.getElementById('history-section'),
                 versionDisplay: document.getElementById('version-display'),
+                authVersionDisplay: document.getElementById('auth-version-display'),
                 contentArea: document.getElementById('content-area'),
                 customSetManager: document.getElementById('custom-set-manager'),
                 setDetailView: document.getElementById('set-detail-view'),
@@ -353,7 +355,7 @@
 
             return new Promise((resolve, reject) => {
                 const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                    unsubscribe();
+                    unsubscribe(); // Stop listening after first check to avoid re-triggering
                     if (user) {
                         userId = user.uid;
                         dom.authContainer.classList.add('hidden');
@@ -375,6 +377,7 @@
             populateUI();
             assignDomElements();
             dom.versionDisplay.textContent = `Version ${APP_VERSION}`;
+            dom.authVersionDisplay.textContent = `v${APP_VERSION}`;
 
             try {
                 await initializeAppAndAuth();
@@ -841,4 +844,3 @@
     </script>
 </body>
 </html>
-
