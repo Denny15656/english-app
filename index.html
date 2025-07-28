@@ -78,7 +78,8 @@
             <!-- Auth Screen -->
             <div id="screen-auth" class="hidden text-center">
                 <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md p-8">
-                    <h2 class="text-2xl font-bold mb-4">ようこそ！</h2>
+                    <h2 class="text-2xl font-bold mb-2">AI英作文練習</h2>
+                    <p id="auth-version-display" class="text-xs text-gray-500 mb-4"></p>
                     <p class="text-gray-600 dark:text-gray-400 mb-6">学習データを安全に保存・同期するために、Googleアカウントでサインインしてください。</p>
                     <ul class="text-left mb-8 space-y-2 text-gray-600 dark:text-gray-400">
                         <li class="flex items-start"><svg class="w-5 h-5 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>進捗が自動で保存され、どのデバイスからでも学習を再開できます。</span></li>
@@ -92,205 +93,29 @@
                 </div>
             </div>
 
-            <!-- Main Menu Screen -->
-            <div id="screen-main-menu" class="hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Stats Card -->
-                    <div class="md:col-span-2 lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                        <h3 class="font-bold text-lg mb-4">学習ステータス</h3>
-                        <div id="stats-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"></div>
-                    </div>
-                    <!-- Mode Selection -->
-                    <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
-                        <h3 class="font-bold text-xl mb-2">今日の復習</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">記憶の定着に最も効果的な問題をSRSが自動で選び出します。</p>
-                        <button id="review-btn" class="btn btn-primary w-full">復習を開始</button>
-                        <div id="review-badge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center"></div>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
-                        <h3 class="font-bold text-xl mb-2">新しい問題を学ぶ</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">まだ学習していない問題に挑戦して、表現の幅を広げましょう。</p>
-                        <button id="new-question-btn" class="btn btn-primary w-full">学習を開始</button>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
-                        <h3 class="font-bold text-xl mb-2">カスタム問題集</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">自分で作成した問題集で、特定の分野を集中的に学習します。</p>
-                        <button id="custom-sets-btn" class="btn btn-primary w-full">問題集を管理</button>
-                    </div>
-                     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
-                        <h3 class="font-bold text-xl mb-2">全回答履歴</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">過去の回答を見返し、間違いの傾向を分析しましょう。</p>
-                        <button id="history-btn" class="btn btn-primary w-full">履歴を見る</button>
-                    </div>
-                </div>
+            <!-- LoggedIn Screen -->
+            <div id="screen-loggedin" class="hidden">
+                <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center">
+                   <h2 class="text-2xl font-bold mb-4">ログイン成功！</h2>
+                   <p>ようこそ、<span id="loggedin-username" class="font-semibold"></span>さん！</p>
+                   <p class="text-sm text-gray-500 mt-2">現在、認証機能のデバッグ中です。</p>
+                   <p class="mt-6">この画面が表示されれば、PCとモバイルでのログイン・ログアウト機能は正常に動作しています。</p>
+               </div>
             </div>
 
-            <!-- Quiz Screen -->
-            <div id="screen-quiz" class="hidden">
-                 <div class="max-w-3xl mx-auto">
-                    <div class="text-center mb-4">
-                        <p id="quiz-progress" class="text-sm text-gray-500"></p>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                            <div id="quiz-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"></div>
-                        </div>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-                        <div class="mb-6 text-center">
-                            <p class="text-lg text-gray-500 dark:text-gray-400 mb-2">以下の日本語を英訳してください:</p>
-                            <h2 id="japanese-question" class="text-2xl md:text-3xl font-bold"></h2>
-                        </div>
-                        <div class="relative">
-                            <textarea id="answer-textarea" rows="4" class="w-full p-4 pr-12 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="ここに回答を入力..."></textarea>
-                            <button id="mic-btn" class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-blue-600">
-                                <svg id="mic-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 017 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H9a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z"></path></svg>
-                                <svg id="mic-recording-icon" class="w-6 h-6 text-red-500 hidden animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 017 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H9a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z"></path></svg>
-                            </button>
-                        </div>
-                        <div class="mt-6 flex flex-col sm:flex-row gap-4">
-                           <button id="submit-answer-btn" class="btn btn-primary w-full sm:w-auto flex-grow">回答を送信</button>
-                           <button id="quit-quiz-btn" class="btn btn-secondary w-full sm:w-auto">中断する</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Result Screen -->
-            <div id="screen-result" class="hidden">
-                <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-                    <!-- Loading Result -->
-                    <div id="result-loading" class="text-center">
-                        <div class="flex justify-center items-center mb-4">
-                           <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
-                        </div>
-                        <p class="text-xl font-semibold animate-pulse">AIが採点中です...</p>
-                        <p id="english-tip" class="mt-4 text-gray-500 dark:text-gray-400"></p>
-                    </div>
-                    <!-- Display Result -->
-                    <div id="result-display" class="hidden">
-                        <div id="result-header" class="text-center mb-6 p-4 rounded-lg">
-                            <h2 id="result-title" class="text-3xl font-bold"></h2>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <h4 class="font-bold text-gray-500 dark:text-gray-400">原文 (日本語)</h4>
-                                <p id="result-japanese" class="p-2 bg-gray-100 dark:bg-gray-700 rounded"></p>
-                            </div>
-                             <div>
-                                <h4 class="font-bold text-gray-500 dark:text-gray-400">あなたの回答</h4>
-                                <p id="result-user-answer" class="p-2 bg-gray-100 dark:bg-gray-700 rounded"></p>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-500 dark:text-gray-400">模範解答</h4>
-                                <p id="result-model-answer" class="p-2 bg-gray-100 dark:bg-gray-700 rounded"></p>
-                            </div>
-                             <div>
-                                <h4 class="font-bold text-gray-500 dark:text-gray-400">AIのフィードバック</h4>
-                                <div id="result-feedback" class="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg whitespace-pre-wrap"></div>
-                            </div>
-                        </div>
-
-                        <!-- AI Chat -->
-                        <div id="ai-chat-section" class="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                            <h3 class="text-xl font-bold mb-4 flex items-center">
-                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                                AIに質問する
-                            </h3>
-                            <div id="chat-messages" class="h-48 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-lg mb-4 border border-gray-200 dark:border-gray-700"></div>
-                            <div class="flex items-center gap-2">
-                                <input id="chat-input" type="text" placeholder="フィードバックについて質問..." class="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                                <button id="chat-send-btn" class="btn btn-primary">送信</button>
-                                <button id="chat-mic-btn" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500">
-                                    <svg id="chat-mic-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z"></path><path fill-rule="evenodd" d="M7 7V4a3 3 0 015.958-1L13 3a1 1 0 11-2 0v4a1 1 0 01-2 0V4a1 1 0 10-2 0v3a1 1 0 01-1-1z" clip-rule="evenodd"></path><path d="M10 12.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 017 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H9a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z"></path></svg>
-                                    <svg id="chat-mic-recording-icon" class="w-5 h-5 text-red-500 hidden animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z"></path><path fill-rule="evenodd" d="M7 7V4a3 3 0 015.958-1L13 3a1 1 0 11-2 0v4a1 1 0 01-2 0V4a1 1 0 10-2 0v3a1 1 0 01-1-1z" clip-rule="evenodd"></path><path d="M10 12.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 017 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H9a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z"></path></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- SRS Level Control -->
-                        <div class="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 text-center">
-                            <p class="mb-2 font-semibold">この問題の習熟度を教えてください</p>
-                            <div class="flex justify-center items-center gap-4">
-                                <button data-level-change="-1" class="srs-level-btn btn btn-danger">まだ苦手...</button>
-                                <span id="srs-level-indicator" class="font-bold text-lg"></span>
-                                <button data-level-change="1" class="srs-level-btn btn btn-success">簡単だった！</button>
-                            </div>
-                        </div>
-
-                        <div class="mt-8 flex justify-end">
-                            <button id="next-question-btn-result" class="btn btn-primary">次の問題へ</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- History Screen -->
-            <div id="screen-history" class="hidden">
-                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                       <h2 class="text-2xl font-bold">全回答履歴</h2>
-                        <button id="back-to-menu-from-history" class="btn btn-secondary">戻る</button>
-                    </div>
-                    <div class="mb-4 flex items-center gap-4">
-                        <label for="history-filter" class="font-semibold">フィルター:</label>
-                        <select id="history-filter" class="p-2 border rounded-lg bg-white dark:bg-gray-700">
-                            <option value="all">すべて</option>
-                            <option value="correct">正解のみ</option>
-                            <option value="incorrect">不正解のみ</option>
-                        </select>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日時</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">問題</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">あなたの回答</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">結果</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <!-- Rows will be inserted here -->
-                            </tbody>
-                        </table>
-                    </div>
-                 </div>
-            </div>
-
-            <!-- Custom Sets Screen -->
-            <div id="screen-custom-sets" class="hidden">
-                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                    <div class="flex justify-between items-center mb-6">
-                       <h2 class="text-2xl font-bold">カスタム問題集の管理</h2>
-                        <button id="back-to-menu-from-custom-sets" class="btn btn-secondary">戻る</button>
-                    </div>
-
-                    <!-- Upload Form -->
-                    <div class="mb-8 p-6 border rounded-lg bg-gray-50 dark:bg-gray-900/50">
-                        <h3 class="text-xl font-semibold mb-4">新しい問題集をアップロード</h3>
-                         <div class="flex flex-col sm:flex-row gap-4">
-                            <input id="custom-set-title" type="text" placeholder="問題集のタイトル" class="flex-grow p-2 border rounded-lg bg-white dark:bg-gray-700">
-                            <input id="csv-file-input" type="file" accept=".csv" class="w-full sm:w-auto file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                         </div>
-                         <p class="text-sm text-gray-500 mt-2">形式: CSVファイル、1行に「日本語テキスト,英語テキスト」</p>
-                         <button id="upload-csv-btn" class="btn btn-primary mt-4">アップロード</button>
-                         <p id="upload-status" class="mt-2 h-5 text-green-600 dark:text-green-400"></p>
-                    </div>
-
-                    <!-- Set List -->
-                    <div>
-                        <h3 class="text-xl font-semibold mb-4">あなたの問題集</h3>
-                        <div id="custom-set-list" class="space-y-4">
-                            <!-- List items will be inserted here -->
-                        </div>
-                    </div>
-                 </div>
-            </div>
+            <!-- Learning related screens are kept in the DOM but hidden and unused -->
+            <div id="screen-main-menu" class="hidden">...</div>
+            <div id="screen-quiz" class="hidden">...</div>
+            <div id="screen-result" class="hidden">...</div>
+            <div id="screen-history" class="hidden">...</div>
+            <div id="screen-custom-sets" class="hidden">...</div>
         </main>
+        <footer class="text-center text-xs text-gray-400 p-4">
+            <p id="version-display"></p>
+        </footer>
     </div>
 
     <!-- Modals -->
-    <!-- API Key Modal -->
     <div id="api-key-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-lg w-full">
             <h2 class="text-2xl font-bold mb-4">APIキーが必要です</h2>
@@ -303,150 +128,60 @@
         </div>
     </div>
     
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-lg w-full">
-            <h2 class="text-2xl font-bold mb-6">設定</h2>
-            <div class="space-y-6">
-                <div>
-                    <label for="max-questions" class="block mb-2 font-medium">1セッションあたりの最大問題数</label>
-                    <input type="number" id="max-questions" min="5" max="100" step="5" class="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700">
-                </div>
-                <div>
-                    <label for="question-order" class="block mb-2 font-medium">新規問題の出題順序</label>
-                    <select id="question-order" class="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700">
-                        <option value="random">ランダム</option>
-                        <option value="file">ファイル順</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 font-medium">音声読み上げ</label>
-                    <label class="inline-flex items-center cursor-pointer">
-                      <input type="checkbox" id="speech-toggle" class="sr-only peer">
-                      <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                      <span class="ms-3 text-sm font-medium">問題文の日本語を自動で読み上げる</span>
-                    </label>
-                </div>
-                 <div>
-                    <button id="reset-api-key-btn" class="btn btn-danger w-full">APIキーを再設定</button>
-                </div>
-            </div>
-            <div class="flex justify-end mt-8">
-                <button id="close-settings-btn" class="btn btn-primary">閉じる</button>
-            </div>
-        </div>
-    </div>
+    <!-- (Settings Modal is removed for simplicity in this version) -->
     
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, serverTimestamp, writeBatch, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- 定数と設定 ---
-        const MASTERED_LEVEL = 6;
-        const REVIEW_INTERVALS = [1, 2, 4, 7, 14, 30, 90, 180, 365]; // days
-        const DEFAULT_SETTINGS = {
-            maxQuestions: 20,
-            questionOrder: 'random',
-            speechEnabled: true,
-        };
-        const englishTips = [
-            "ヒント: 冠詞 (a, an, the) の使い方に注意しましょう。",
-            "ヒント: 単数形と複数形を正しく使い分けましょう。",
-            "ヒント: 時制は文脈に合っていますか？",
-            "ヒント: 前置詞 (in, on, at) はよくある間違いポイントです。",
-            "ヒント: 主語と動詞は一致していますか？ (e.g., He walks, They walk)",
-        ];
-        const defaultSentences = [
-            ["これはペンです。", "This is a pen."],
-            ["私の名前は健です。", "My name is Ken."],
-            ["あなたは学生ですか？", "Are you a student?"],
-            ["私は毎日英語を勉強します。", "I study English every day."],
-            ["彼は昨日公園に行きました。", "He went to the park yesterday."],
-            ["彼女は手紙を書いています。", "She is writing a letter."],
-            ["私たちは来週、京都を訪れる予定です。", "We are going to visit Kyoto next week."],
-            ["この本はとても面白いです。", "This book is very interesting."],
-            ["窓を開けてもよろしいですか？", "May I open the window?"],
-            ["彼は私より背が高いです。", "He is taller than me."],
-            ["世界で最も高い山は何ですか？", "What is the highest mountain in the world?"],
-            ["もし私があなたなら、その仕事を引き受けるでしょう。", "If I were you, I would take the job."],
-            ["私は彼が正直だとは思いません。", "I don't think that he is honest."],
-            ["その知らせを聞いて、私は驚きました。", "I was surprised to hear the news."],
-            ["英語を話すことは難しくありません。", "It is not difficult to speak English."],
-        ];
-        
+        // --- App Version ---
+        const APP_VERSION = "3.35.2";
+
         // --- グローバル変数と状態管理 ---
         let app, auth, db;
         let currentUser = null;
-        let userProfileUnsubscribe = null;
-        let questionStatsUnsubscribe = null;
-        let historyUnsubscribe = null;
-        let customSetsUnsubscribe = null;
-
-        let state = {
-            apiKey: null,
-            settings: { ...DEFAULT_SETTINGS },
-            currentQuiz: {
-                questions: [],
-                currentIndex: 0,
-                mode: null,
-            },
-            questionStats: new Map(), // japanese -> {level, nextReviewDate, ...}
-            allHistory: [],
-            customSets: [],
-            conversationContext: null,
-            isMicRecording: false,
-            isChatMicRecording: false,
-        };
+        let apiKey = null;
         
         // --- DOM要素 ---
         const screens = {
             loading: document.getElementById('screen-loading'),
             auth: document.getElementById('screen-auth'),
-            mainMenu: document.getElementById('screen-main-menu'),
-            quiz: document.getElementById('screen-quiz'),
-            result: document.getElementById('screen-result'),
-            history: document.getElementById('screen-history'),
-            customSets: document.getElementById('screen-custom-sets'),
+            loggedin: document.getElementById('screen-loggedin'),
         };
         const modals = {
             apiKey: document.getElementById('api-key-modal'),
-            settings: document.getElementById('settings-modal'),
         };
         
         // --- 初期化 ---
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM content loaded. Initializing app...");
+            console.log(`DOM content loaded. Initializing app v${APP_VERSION}...`);
+            // Display version
+            document.getElementById('version-display').textContent = `v${APP_VERSION}`;
+            document.getElementById('auth-version-display').textContent = `v${APP_VERSION}`;
+
             initFirebase();
-            loadSettings();
             loadApiKey();
             initEventListeners();
             showScreen('loading');
             
-            if (!state.apiKey) {
+            if (!apiKey) {
                 showModal('apiKey');
             }
         });
 
         function initFirebase() {
             try {
-                // The execution environment is expected to provide __firebase_config
                 if (typeof __firebase_config === 'undefined' || !__firebase_config.trim()) {
                     throw new Error("Firebase configuration variable (__firebase_config) is not available or is empty.");
                 }
-
                 const firebaseConfig = JSON.parse(__firebase_config);
-
-                // Basic validation of the parsed config object
                 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
                     throw new Error("The provided Firebase configuration is missing essential properties like apiKey or projectId.");
                 }
-
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                db = getFirestore(app);
-                setPersistence(auth, browserLocalPersistence); // セッション永続化
+                setPersistence(auth, browserLocalPersistence);
                 setupAuthObserver();
             } catch (error) {
                 console.error("Firebaseの初期化に失敗しました:", error);
@@ -466,32 +201,22 @@
         }
 
         function setupAuthObserver() {
-             // Handle the result of the redirect sign-in
             getRedirectResult(auth)
                 .then((result) => {
-                    if (result) {
-                        // This confirms the redirect result has been handled.
-                        // onAuthStateChanged will now fire with the user.
-                        console.log("Redirect result successfully handled.", result.user);
-                    }
+                    if (result) console.log("Redirect result successfully handled.", result.user);
                 }).catch((error) => {
-                    // Handle Errors here.
                     console.error("Error handling redirect result:", error);
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    document.getElementById('auth-error').textContent = `エラー: ${errorMessage} (${errorCode})`;
+                    document.getElementById('auth-error').textContent = `エラー: ${error.message} (${error.code})`;
                 });
 
              onAuthStateChanged(auth, user => {
                 if (user) {
-                    // ユーザーがログインしている
-                    if (currentUser && currentUser.uid === user.uid) return; // 既に処理済み
+                    if (currentUser && currentUser.uid === user.uid) return;
                     currentUser = user;
                     console.log("User signed in:", user.uid);
                     onLogin();
                 } else {
-                    // ユーザーがログアウトした
-                    if (!currentUser) return; // 既に処理済み
+                    if (!currentUser) return;
                     console.log("User signed out.");
                     onLogout();
                 }
@@ -499,25 +224,21 @@
         }
         
         // --- 認証 ---
-        async function onLogin() {
-            if (!state.apiKey) {
+        function onLogin() {
+            if (!apiKey) {
                 showModal('apiKey');
-                showScreen('auth'); // ログインボタンは隠す
+                showScreen('auth');
                 document.getElementById('auth-container').innerHTML = '';
                 return;
             }
             showScreen('loading');
             updateHeader();
-            await setupUser();
-            showScreen('mainMenu');
+            document.getElementById('loggedin-username').textContent = currentUser.displayName;
+            showScreen('loggedin');
         }
 
         function onLogout() {
             currentUser = null;
-            cleanupListeners();
-            state.questionStats.clear();
-            state.allHistory = [];
-            state.customSets = [];
             updateHeader();
             showScreen('auth');
         }
@@ -557,997 +278,70 @@
             signOut(auth).catch(error => console.error("Sign out error", error));
         }
 
-        // --- データ管理 (Firestore) ---
-        async function setupUser() {
-            const userRef = doc(db, 'users', currentUser.uid);
-            const userDoc = await getDoc(userRef);
-
-            if (!userDoc.exists()) {
-                await setDoc(userRef, {
-                    profile: {
-                        displayName: currentUser.displayName,
-                        email: currentUser.email,
-                        photoURL: currentUser.photoURL,
-                        createdAt: serverTimestamp(),
-                        lastLoginDate: "",
-                        streakCount: 0,
-                    }
-                });
-            }
-            
-            updateStreak();
-            cleanupListeners(); // Start with a clean slate
-            setupRealtimeListeners();
-        }
-
-        function cleanupListeners() {
-            if (userProfileUnsubscribe) userProfileUnsubscribe();
-            if (questionStatsUnsubscribe) questionStatsUnsubscribe();
-            if (historyUnsubscribe) historyUnsubscribe();
-            if (customSetsUnsubscribe) customSetsUnsubscribe();
-        }
-
-        function setupRealtimeListeners() {
-            const userRef = doc(db, 'users', currentUser.uid);
-            
-            // Profile Listener (for streak)
-            userProfileUnsubscribe = onSnapshot(userRef, (doc) => {
-                const profile = doc.data()?.profile;
-                if (profile && profile.streakCount !== undefined) {
-                    updateStreakUI(profile.streakCount);
-                }
-            });
-
-            // Question Stats Listener
-            const statsCol = collection(db, `users/${currentUser.uid}/questionStats`);
-            questionStatsUnsubscribe = onSnapshot(statsCol, (snapshot) => {
-                snapshot.docs.forEach(doc => {
-                    state.questionStats.set(doc.id, { id: doc.id, ...doc.data() });
-                });
-                updateStats();
-            });
-
-            // History Listener
-            const historyCol = collection(db, `users/${currentUser.uid}/history`);
-            const historyQuery = query(historyCol, where('timestamp', '!=', null));
-            historyUnsubscribe = onSnapshot(historyQuery, (snapshot) => {
-                state.allHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                updateHistoryScreen(); // If history screen is active
-            });
-            
-            // Custom Sets Listener
-            const setsCol = collection(db, `users/${currentUser.uid}/problemSets`);
-            customSetsUnsubscribe = onSnapshot(setsCol, (snapshot) => {
-                state.customSets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                updateCustomSetList(); // If custom set screen is active
-            });
-        }
-
-        async function updateStreak() {
-            const userRef = doc(db, 'users', currentUser.uid);
-            const userDoc = await getDoc(userRef);
-            const profile = userDoc.data()?.profile || {};
-
-            const today = new Date().toLocaleDateString('sv'); // YYYY-MM-DD
-            const lastLogin = profile.lastLoginDate;
-
-            if (lastLogin === today) return; // Already logged in today
-
-            const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('sv');
-            let newStreak = 1;
-            if (lastLogin === yesterday) {
-                newStreak = (profile.streakCount || 0) + 1;
-            }
-
-            await updateDoc(userRef, {
-                "profile.lastLoginDate": today,
-                "profile.streakCount": newStreak
-            });
-        }
-        
-        async function saveAnswer(question, userAnswer, result) {
-            const batch = writeBatch(db);
-            const now = new Date();
-
-            // 1. Update question stat
-            const statRef = doc(db, `users/${currentUser.uid}/questionStats`, question.japanese);
-            const currentStat = state.questionStats.get(question.japanese) || {
-                level: 0,
-                attemptCount: 0,
-                correctCount: 0,
-            };
-            
-            const newLevel = result.isCorrect 
-                ? Math.min(currentStat.level + 1, REVIEW_INTERVALS.length -1) 
-                : Math.max(0, currentStat.level - 1);
-                
-            const nextReviewDate = new Date(now);
-            nextReviewDate.setDate(now.getDate() + REVIEW_INTERVALS[newLevel]);
-
-            const newStat = {
-                level: newLevel,
-                nextReviewDate: Timestamp.fromDate(nextReviewDate),
-                lastAttemptDate: Timestamp.fromDate(now),
-                attemptCount: (currentStat.attemptCount || 0) + 1,
-                correctCount: (currentStat.correctCount || 0) + (result.isCorrect ? 1 : 0),
-                japanese: question.japanese,
-                english: question.english
-            };
-            batch.set(statRef, newStat, { merge: true });
-
-            // 2. Add to history
-            const historyRef = doc(collection(db, `users/${currentUser.uid}/history`));
-            batch.set(historyRef, {
-                timestamp: serverTimestamp(),
-                japanese: question.japanese,
-                userAnswer: userAnswer,
-                modelAnswer: question.english,
-                isCorrect: result.isCorrect,
-                feedback: result.feedback,
-            });
-
-            await batch.commit();
-        }
-
-        async function updateSrsLevel(question, levelChange) {
-            const statRef = doc(db, `users/${currentUser.uid}/questionStats`, question.japanese);
-            const currentStat = state.questionStats.get(question.japanese);
-            if (!currentStat) return;
-            
-            const newLevel = Math.max(0, Math.min(currentStat.level + levelChange, REVIEW_INTERVALS.length - 1));
-            
-            if (newLevel === currentStat.level) return;
-
-            const now = new Date();
-            const nextReviewDate = new Date(now);
-            nextReviewDate.setDate(now.getDate() + REVIEW_INTERVALS[newLevel]);
-            
-            await updateDoc(statRef, {
-                level: newLevel,
-                nextReviewDate: Timestamp.fromDate(nextReviewDate)
-            });
-            
-            // Update local state immediately for UI responsiveness
-            state.questionStats.set(question.japanese, { ...currentStat, level: newLevel });
-            updateSrsLevelIndicator(newLevel);
-        }
-
         // --- UI更新 ---
         function showScreen(screenId) {
-            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+            Object.keys(screens).forEach(key => {
+                if(screens[key]) screens[key].classList.add('hidden');
+            });
             if (screens[screenId]) {
                 screens[screenId].classList.remove('hidden');
             }
         }
         
         function showModal(modalId) {
-            if (modals[modalId]) {
-                modals[modalId].classList.remove('hidden');
-            }
+            if (modals[modalId]) modals[modalId].classList.remove('hidden');
         }
 
         function hideModal(modalId) {
-            if (modals[modalId]) {
-                modals[modalId].classList.add('hidden');
-            }
+            if (modals[modalId]) modals[modalId].classList.add('hidden');
         }
 
         function updateHeader() {
             const container = document.getElementById('auth-container');
             if (currentUser) {
                 container.innerHTML = `
-                    <div id="streak-counter" class="flex items-center font-bold text-orange-500"></div>
                     <div class="has-tooltip relative">
-                        <img src="${currentUser.photoURL || 'https://placehold.co/40x40/E2E8F0/4A5568?text=User'}" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer" id="avatar-btn">
+                        <img src="${currentUser.photoURL || 'https://placehold.co/40x40/E2E8F0/4A5568?text=User'}" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer">
                         <div class="tooltip -left-8 mt-2 w-auto p-2 bg-gray-700 text-white text-xs rounded-md shadow-lg">
                             UID: ${currentUser.uid}
                         </div>
                     </div>
-                    <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
                     <button id="signout-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     </button>
                 `;
                 document.getElementById('signout-btn').onclick = handleSignOut;
-                document.getElementById('settings-btn').onclick = () => showModal('settings');
             } else {
-                container.innerHTML = ''; // No sign-in button here, handled by screen-auth
+                container.innerHTML = '';
             }
         }
         
-        function updateStreakUI(streak) {
-            const container = document.getElementById('streak-counter');
-            if (streak > 0) {
-                container.innerHTML = `<span class="streak-fire text-2xl mr-1">🔥</span> ${streak}日連続`;
-            } else {
-                container.innerHTML = ``;
-            }
-        }
-        
-        function updateStats() {
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            let learning = 0;
-            let mastered = 0;
-            let dueForReview = 0;
-            
-            for (const stat of state.questionStats.values()) {
-                if (stat.level >= MASTERED_LEVEL) {
-                    mastered++;
-                } else {
-                    learning++;
-                    if (stat.nextReviewDate && stat.nextReviewDate.toDate() <= todayStart) {
-                        dueForReview++;
-                    }
-                }
-            }
-            
-            const totalCustomQuestions = state.customSets.reduce((sum, set) => sum + (set.questions?.length || 0), 0);
-            const totalQuestions = defaultSentences.length + totalCustomQuestions;
-            
-            document.getElementById('stats-container').innerHTML = `
-                <div><p class="text-3xl font-bold">${learning}</p><p class="text-sm text-gray-500">学習中</p></div>
-                <div><p class="text-3xl font-bold text-green-500">${mastered}</p><p class="text-sm text-gray-500">習得済み</p></div>
-                <div><p class="text-3xl font-bold text-blue-500">${dueForReview}</p><p class="text-sm text-gray-500">今日復習</p></div>
-                <div><p class="text-3xl font-bold">${totalQuestions}</p><p class="text-sm text-gray-500">全問題数</p></div>
-            `;
-            
-            const reviewBtn = document.getElementById('review-btn');
-            const reviewBadge = document.getElementById('review-badge');
-            reviewBtn.disabled = dueForReview === 0;
-            if(dueForReview > 0) {
-                reviewBadge.textContent = dueForReview;
-                reviewBadge.classList.remove('hidden');
-            } else {
-                reviewBadge.classList.add('hidden');
-            }
-        }
-
-        // --- クイズロジック ---
-        function startQuiz(mode, customSetId = null) {
-            let questions = [];
-            if (mode === 'review') {
-                const now = new Date();
-                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                questions = [...state.questionStats.values()]
-                    .filter(stat => stat.level < MASTERED_LEVEL && stat.nextReviewDate && stat.nextReviewDate.toDate() <= todayStart)
-                    .map(stat => ({ japanese: stat.japanese, english: stat.english }));
-            } else if (mode === 'new') {
-                const learnedJapanese = new Set(state.questionStats.keys());
-                questions = defaultSentences
-                    .filter(q => !learnedJapanese.has(q[0]))
-                    .map(q => ({ japanese: q[0], english: q[1] }));
-                
-                if (state.settings.questionOrder === 'random') {
-                    questions.sort(() => Math.random() - 0.5);
-                }
-            } else if (mode === 'custom' && customSetId) {
-                const selectedSet = state.customSets.find(s => s.id === customSetId);
-                if(selectedSet && selectedSet.questions) {
-                    questions = selectedSet.questions.map(q => ({ japanese: q.japanese, english: q.english}));
-                }
-            }
-            
-            if (questions.length === 0) {
-                alert(mode === 'new' ? '新しい問題がありません！' : '復習する問題がありません！');
-                return;
-            }
-
-            state.currentQuiz = {
-                questions: questions.slice(0, state.settings.maxQuestions),
-                currentIndex: 0,
-                mode: mode
-            };
-
-            showScreen('quiz');
-            loadNextQuestion();
-        }
-
-        function loadNextQuestion() {
-            if (state.currentQuiz.currentIndex >= state.currentQuiz.questions.length) {
-                alert('セッション完了！お疲れ様でした！');
-                showScreen('mainMenu');
-                return;
-            }
-
-            const question = state.currentQuiz.questions[state.currentQuiz.currentIndex];
-            document.getElementById('japanese-question').textContent = question.japanese;
-            document.getElementById('answer-textarea').value = '';
-            document.getElementById('answer-textarea').focus();
-
-            // Progress bar
-            const progress = (state.currentQuiz.currentIndex / state.currentQuiz.questions.length) * 100;
-            document.getElementById('quiz-progress').textContent = `問題 ${state.currentQuiz.currentIndex + 1} / ${state.currentQuiz.questions.length}`;
-            document.getElementById('quiz-progress-bar').style.width = `${progress}%`;
-
-            // Reset conversation context for the new question
-            state.conversationContext = null;
-
-            if (state.settings.speechEnabled) {
-                speak(question.japanese, 'ja-JP');
-            }
-        }
-
-        async function submitAnswer() {
-            const userAnswer = document.getElementById('answer-textarea').value.trim();
-            if (!userAnswer) {
-                alert('回答を入力してください。');
-                return;
-            }
-
-            const question = state.currentQuiz.questions[state.currentQuiz.currentIndex];
-            showScreen('result');
-            showResultLoading();
-
-            try {
-                const result = await rateAnswerByAI(question, userAnswer);
-                await saveAnswer(question, userAnswer, result);
-                showResultDisplay(question, userAnswer, result);
-                // Sound effect
-                playSound(result.isCorrect);
-
-            } catch (error) {
-                console.error("AI採点エラー:", error);
-                alert(`採点中にエラーが発生しました: ${error.message}`);
-                showScreen('quiz');
-            }
-        }
-
-        // --- 結果画面とAI会話 ---
-        function showResultLoading() {
-            document.getElementById('result-loading').classList.remove('hidden');
-            document.getElementById('result-display').classList.add('hidden');
-            document.getElementById('english-tip').textContent = englishTips[Math.floor(Math.random() * englishTips.length)];
-        }
-        
-        function showResultDisplay(question, userAnswer, result) {
-            document.getElementById('result-loading').classList.add('hidden');
-            document.getElementById('result-display').classList.remove('hidden');
-            
-            const header = document.getElementById('result-header');
-            const title = document.getElementById('result-title');
-            
-            if (result.isCorrect) {
-                header.className = 'text-center mb-6 p-4 rounded-lg bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
-                title.textContent = '正解！🎉';
-            } else {
-                header.className = 'text-center mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
-                title.textContent = 'もう少し！';
-            }
-
-            document.getElementById('result-japanese').textContent = question.japanese;
-            document.getElementById('result-user-answer').textContent = userAnswer;
-            document.getElementById('result-model-answer').textContent = question.english;
-            document.getElementById('result-feedback').textContent = result.feedback;
-            
-            // AI会話のセットアップ
-            document.getElementById('chat-messages').innerHTML = '';
-            document.getElementById('chat-input').value = '';
-            
-            state.conversationContext = {
-                history: [
-                    {
-                        role: 'user',
-                        parts: [{
-                            text: `
-あなたは親切で優秀な英語教師です。以下の英作文の採点結果について、生徒から質問を受けます。
-生徒の質問に、教師として丁寧かつ分かりやすく答えてください。
-
-# 採点情報
-- 日本語原文: ${question.japanese}
-- 模範解答: ${question.english}
-- 生徒の回答: ${userAnswer}
-- あなたの評価: ${result.feedback}
-`
-                        }]
-                    },
-                    { role: 'model', parts: [{ text: 'はい、承知いたしました。この英作文について、どのようなことでも質問してくださいね。' }] }
-                ]
-            };
-            addMessageToChat('AI', 'このフィードバックについて、何か質問はありますか？音声でもテキストでもどうぞ。');
-            
-            // SRSレベル表示
-            const currentStat = state.questionStats.get(question.japanese);
-            updateSrsLevelIndicator(currentStat ? currentStat.level : 0);
-        }
-
-        function updateSrsLevelIndicator(level) {
-             const indicator = document.getElementById('srs-level-indicator');
-             indicator.textContent = `レベル ${level}`;
-             const percentage = (level / (REVIEW_INTERVALS.length - 1)) * 100;
-             indicator.style.color = `hsl(${percentage * 1.2}, 80%, 45%)`;
-        }
-
-        async function handleChatSend() {
-            const input = document.getElementById('chat-input');
-            const userMessage = input.value.trim();
-            if (!userMessage || !state.conversationContext) return;
-            
-            input.value = '';
-            addMessageToChat('You', userMessage);
-            
-            const sendBtn = document.getElementById('chat-send-btn');
-            sendBtn.disabled = true;
-            sendBtn.textContent = '思考中...';
-
-            try {
-                // ストリーミングで応答を取得
-                state.conversationContext.history.push({ role: 'user', parts: [{ text: userMessage }] });
-                
-                const stream = await geminiStream(state.conversationContext.history);
-                
-                let fullResponse = '';
-                const aiMessageEl = addMessageToChat('AI', '');
-                
-                for await (const chunk of stream) {
-                    const chunkText = chunk.text();
-                    fullResponse += chunkText;
-                    aiMessageEl.textContent = fullResponse;
-                    const chatMessages = document.getElementById('chat-messages');
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }
-                
-                state.conversationContext.history.push({ role: 'model', parts: [{ text: fullResponse }] });
-                
-                // 高品質音声で読み上げ
-                try {
-                    const audioUrl = await generateTts(fullResponse);
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                } catch(ttsError) {
-                    console.error("Gemini TTS failed, falling back to browser speech.", ttsError);
-                    speak(fullResponse, 'ja-JP'); // フォールバック
-                }
-
-            } catch (error) {
-                console.error("AI chat error:", error);
-                addMessageToChat('AI', '申し訳ありません、エラーが発生しました。');
-            } finally {
-                sendBtn.disabled = false;
-                sendBtn.textContent = '送信';
-            }
-        }
-
-        function addMessageToChat(sender, message) {
-            const chatBox = document.getElementById('chat-messages');
-            const messageEl = document.createElement('div');
-            messageEl.classList.add('mb-2');
-            
-            const senderSpan = document.createElement('span');
-            senderSpan.textContent = `${sender}: `;
-            senderSpan.className = sender === 'AI' ? 'font-bold text-blue-600 dark:text-blue-400' : 'font-bold';
-            
-            const contentSpan = document.createElement('span');
-            contentSpan.textContent = message;
-
-            messageEl.appendChild(senderSpan);
-            messageEl.appendChild(contentSpan);
-
-            chatBox.appendChild(messageEl);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return contentSpan;
-        }
-
-        // --- API連携 (Gemini & Web APIs) ---
+        // --- APIキー管理 ---
         function loadApiKey() {
-            state.apiKey = localStorage.getItem('geminiApiKey');
+            apiKey = localStorage.getItem('geminiApiKey');
         }
         
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value;
             if (key) {
-                state.apiKey = key;
+                apiKey = key;
                 localStorage.setItem('geminiApiKey', key);
                 hideModal('apiKey');
-                if (currentUser) { // 既にログイン済みならメイン画面へ
+                if (auth.currentUser) {
                    onLogin();
+                } else {
+                    showScreen('auth');
                 }
             } else {
                 alert('APIキーを入力してください。');
             }
         }
         
-        async function geminiApiCall(payload, stream = false) {
-             if (!state.apiKey) {
-                showModal('apiKey');
-                throw new Error("APIキーが設定されていません。");
-            }
-            
-            const model = "gemini-2.5-flash-preview-05-20";
-            const endpoint = stream ? "streamGenerateContent" : "generateContent";
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${endpoint}?key=${state.apiKey}`;
-
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("API Error:", errorData);
-                throw new Error(errorData.error?.message || "APIリクエストに失敗しました。");
-            }
-            return response;
-        }
-
-        async function rateAnswerByAI(question, userAnswer) {
-            const prompt = `
-あなたは優秀で寛容な英語教師です。生徒の英作文を採点してください。
-以下のルールに従ってください。
-- 句読点(コンマ, ピリオドなど)、大文字/小文字の違いは無視してください。
-- 文法的に正しく、意味が通じる場合は、模範解答と多少表現が異なっていても「正解」としてください。
-- 採点結果をJSON形式で返してください。
-- JSONには isCorrect (boolean), feedback (string) の2つのキーを含めてください。
-- feedbackは、生徒を励ますようなポジティブなトーンで、具体的にどこが良かったか、どこを改善できるかを日本語で簡潔に説明してください。
-
-# 採点対象
-- 日本語原文: ${question.japanese}
-- 模範解答: ${question.english}
-- 生徒の回答: ${userAnswer}
-`;
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                 generationConfig: {
-                    responseMimeType: "application/json",
-                 }
-            };
-
-            const response = await geminiApiCall(payload);
-            const data = await response.json();
-            const text = data.candidates[0].content.parts[0].text;
-            return JSON.parse(text);
-        }
-        
-        async function geminiStream(history) {
-            const payload = { contents: history };
-            const response = await geminiApiCall(payload, true);
-            const data = await response.json();
-            // This is a simplified stream handling for demo purposes.
-            // A more robust implementation would handle the stream chunks directly.
-            return data.map(d => ({ text: () => d.candidates[0].content.parts[0].text }));
-        }
-
-        async function generateTts(text) {
-             if (!state.apiKey) throw new Error("APIキーが設定されていません。");
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${state.apiKey}`;
-            const payload = {
-                model: "gemini-2.5-flash-preview-tts",
-                contents: [{ parts: [{ text: text }] }],
-                generationConfig: { responseModalities: ["AUDIO"] }
-            };
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) throw new Error('TTS API request failed');
-            const result = await response.json();
-            const audioData = result.candidates[0].content.parts[0].inlineData.data;
-            const pcmData = base64ToArrayBuffer(audioData);
-            const pcm16 = new Int16Array(pcmData);
-            const wavBlob = pcmToWav(pcm16, 24000); // Gemini TTS sample rate is 24kHz
-            return URL.createObjectURL(wavBlob);
-        }
-        
-        // --- ブラウザAPI: Speech, Audio, etc. ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition;
-        
-        function initSpeechRecognition(lang, onResult, onEnd) {
-            if (!SpeechRecognition) {
-                alert("お使いのブラウザは音声認識に対応していません。");
-                return null;
-            }
-            const rec = new SpeechRecognition();
-            rec.lang = lang;
-            rec.interimResults = true;
-            rec.continuous = false;
-
-            rec.onresult = event => {
-                let interimTranscript = '';
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
-                    }
-                }
-                onResult(finalTranscript, interimTranscript);
-            };
-            
-            rec.onend = onEnd;
-            rec.onerror = event => {
-                console.error("SpeechRecognition error", event.error);
-                onEnd();
-            };
-            return rec;
-        }
-
-        function toggleMic() {
-            if (state.isMicRecording) {
-                recognition.stop();
-            } else {
-                 recognition = initSpeechRecognition(
-                    'en-US',
-                    (final, interim) => {
-                        document.getElementById('answer-textarea').value = final + interim;
-                    },
-                    () => {
-                        state.isMicRecording = false;
-                        updateMicButtonUI();
-                    }
-                );
-                if(recognition) {
-                    recognition.start();
-                    state.isMicRecording = true;
-                    updateMicButtonUI();
-                }
-            }
-        }
-        
-        function updateMicButtonUI() {
-            const micIcon = document.getElementById('mic-icon');
-            const recordingIcon = document.getElementById('mic-recording-icon');
-            if(state.isMicRecording) {
-                micIcon.classList.add('hidden');
-                recordingIcon.classList.remove('hidden');
-            } else {
-                micIcon.classList.remove('hidden');
-                recordingIcon.classList.add('hidden');
-            }
-        }
-
-        function toggleChatMic() {
-            if (state.isChatMicRecording) {
-                recognition.stop();
-            } else {
-                 recognition = initSpeechRecognition(
-                    'ja-JP',
-                    (final, interim) => {
-                        document.getElementById('chat-input').value = final + interim;
-                    },
-                    () => {
-                        state.isChatMicRecording = false;
-                        updateChatMicButtonUI();
-                    }
-                );
-                if(recognition) {
-                    recognition.start();
-                    state.isChatMicRecording = true;
-                    updateChatMicButtonUI();
-                }
-            }
-        }
-        
-        function updateChatMicButtonUI() {
-            const micIcon = document.getElementById('chat-mic-icon');
-            const recordingIcon = document.getElementById('chat-mic-recording-icon');
-             if(state.isChatMicRecording) {
-                micIcon.classList.add('hidden');
-                recordingIcon.classList.remove('hidden');
-            } else {
-                micIcon.classList.remove('hidden');
-                recordingIcon.classList.add('hidden');
-            }
-        }
-        
-        function speak(text, lang) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-        
-        function playSound(isCorrect) {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.01);
-            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
-
-            if (isCorrect) {
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                oscillator.frequency.linearRampToValueAtTime(1046.50, audioCtx.currentTime + 0.1); // C6
-            } else {
-                oscillator.type = 'square';
-                oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
-            }
-
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.2);
-        }
-        
-        // --- 設定管理 ---
-        function loadSettings() {
-            try {
-                const savedSettings = JSON.parse(localStorage.getItem('appSettings'));
-                if (savedSettings) {
-                    state.settings = { ...DEFAULT_SETTINGS, ...savedSettings };
-                }
-            } catch(e) { console.error("Failed to load settings", e); }
-            updateSettingsUI();
-        }
-
-        function saveSettings() {
-            state.settings.maxQuestions = parseInt(document.getElementById('max-questions').value, 10);
-            state.settings.questionOrder = document.getElementById('question-order').value;
-            state.settings.speechEnabled = document.getElementById('speech-toggle').checked;
-            localStorage.setItem('appSettings', JSON.stringify(state.settings));
-            alert('設定を保存しました。');
-        }
-
-        function updateSettingsUI() {
-            document.getElementById('max-questions').value = state.settings.maxQuestions;
-            document.getElementById('question-order').value = state.settings.questionOrder;
-            document.getElementById('speech-toggle').checked = state.settings.speechEnabled;
-        }
-
-        // --- カスタム問題集 ---
-        function handleFileUpload() {
-            const titleInput = document.getElementById('custom-set-title');
-            const fileInput = document.getElementById('csv-file-input');
-            const statusEl = document.getElementById('upload-status');
-            
-            const title = titleInput.value.trim();
-            const file = fileInput.files[0];
-
-            if (!title || !file) {
-                statusEl.textContent = 'タイトルとファイルを選択してください。';
-                statusEl.className = 'mt-2 h-5 text-red-500';
-                return;
-            }
-            if (!file.name.endsWith('.csv')) {
-                statusEl.textContent = 'CSVファイルを選択してください。';
-                statusEl.className = 'mt-2 h-5 text-red-500';
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const text = e.target.result;
-                    const lines = text.split(/\r\n|\n/);
-                    const questions = [];
-                    for(let i = 0; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        if (!line) continue;
-                        
-                        const parts = line.split(',');
-                        if (parts.length < 2 || !parts[0].trim() || !parts[1].trim()) {
-                            throw new Error(`エラー: ${i+1}行目の形式が正しくありません。`);
-                        }
-                        const japanese = parts.shift().trim();
-                        const english = parts.join(',').trim();
-                        questions.push({ japanese, english });
-                    }
-                    if (questions.length === 0) {
-                        throw new Error("有効な問題が見つかりませんでした。");
-                    }
-
-                    // Firestoreに保存
-                    const setsCol = collection(db, `users/${currentUser.uid}/problemSets`);
-                    await setDoc(doc(setsCol), {
-                        title,
-                        questions,
-                        createdAt: serverTimestamp(),
-                    });
-
-                    statusEl.textContent = 'アップロードに成功しました！';
-                    statusEl.className = 'mt-2 h-5 text-green-600 dark:text-green-400';
-                    titleInput.value = '';
-                    fileInput.value = '';
-
-                } catch (error) {
-                    console.error("CSV Parse/Upload Error:", error);
-                    statusEl.textContent = error.message;
-                    statusEl.className = 'mt-2 h-5 text-red-500';
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function updateCustomSetList() {
-            const listEl = document.getElementById('custom-set-list');
-            if (!listEl || !currentUser) return;
-
-            if (state.customSets.length === 0) {
-                listEl.innerHTML = '<p class="text-gray-500">まだ問題集がありません。</p>';
-                return;
-            }
-
-            listEl.innerHTML = state.customSets.map(set => {
-                const total = set.questions?.length || 0;
-                const learned = set.questions?.filter(q => state.questionStats.has(q.japanese)).length || 0;
-
-                return `
-                <div class="p-4 border rounded-lg flex justify-between items-center bg-gray-50 dark:bg-gray-700/50">
-                    <div>
-                        <h4 class="font-bold text-lg">${set.title}</h4>
-                        <p class="text-sm text-gray-500">全${total}問中 ${learned}問学習済み</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button data-set-id="${set.id}" class="btn btn-primary start-custom-quiz-btn">学習する</button>
-                        <button data-set-id="${set.id}" class="btn btn-danger delete-custom-set-btn">削除</button>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
-
-        async function deleteCustomSet(setId) {
-            if (confirm("本当にこの問題集を削除しますか？この操作は元に戻せません。")) {
-                const setRef = doc(db, `users/${currentUser.uid}/problemSets`, setId);
-                await deleteDoc(setRef);
-            }
-        }
-
-
-        // --- 履歴画面 ---
-        function updateHistoryScreen() {
-            const tbody = document.getElementById('history-table-body');
-            const filter = document.getElementById('history-filter').value;
-            if (!tbody || !currentUser) return;
-            
-            const filteredHistory = state.allHistory
-                .filter(item => {
-                    if (filter === 'all') return true;
-                    return filter === 'correct' ? item.isCorrect : !item.isCorrect;
-                })
-                .sort((a,b) => b.timestamp.toDate() - a.timestamp.toDate());
-            
-            if (filteredHistory.length === 0) {
-                 tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-500">履歴がありません。</td></tr>`;
-                 return;
-            }
-
-            tbody.innerHTML = filteredHistory.map(item => `
-                <tr class="${item.isCorrect ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${item.timestamp.toDate().toLocaleString()}</td>
-                    <td class="px-6 py-4 text-sm">${item.japanese}</td>
-                    <td class="px-6 py-4 text-sm">${item.userAnswer}</td>
-                    <td class="px-6 py-4 text-sm font-medium ${item.isCorrect ? 'text-green-600' : 'text-red-600'}">${item.isCorrect ? '正解' : '不正解'}</td>
-                </tr>
-            `).join('');
-        }
-        
         // --- イベントリスナー ---
         function initEventListeners() {
-            // Auth
             document.getElementById('signin-btn').addEventListener('click', handleSignIn);
-
-            // Modals
             document.getElementById('save-api-key-btn').addEventListener('click', saveApiKey);
             document.getElementById('api-key-input').addEventListener('keypress', (e) => e.key === 'Enter' && saveApiKey());
-            document.getElementById('close-settings-btn').addEventListener('click', () => {
-                saveSettings();
-                hideModal('settings');
-            });
-            document.getElementById('reset-api-key-btn').addEventListener('click', () => {
-                if(confirm('APIキーをリセットしますか？')) {
-                    localStorage.removeItem('geminiApiKey');
-                    state.apiKey = null;
-                    hideModal('settings');
-                    onLogout();
-                    showModal('apiKey');
-                }
-            });
-
-            // Main Menu
-            document.getElementById('review-btn').addEventListener('click', () => startQuiz('review'));
-            document.getElementById('new-question-btn').addEventListener('click', () => startQuiz('new'));
-            document.getElementById('custom-sets-btn').addEventListener('click', () => {
-                updateCustomSetList();
-                showScreen('customSets');
-            });
-            document.getElementById('history-btn').addEventListener('click', () => {
-                updateHistoryScreen();
-                showScreen('history');
-            });
-
-            // Quiz Screen
-            document.getElementById('submit-answer-btn').addEventListener('click', submitAnswer);
-            document.getElementById('answer-textarea').addEventListener('keypress', (e) => {
-                if(e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    submitAnswer();
-                }
-            });
-            document.getElementById('quit-quiz-btn').addEventListener('click', () => {
-                if (confirm('現在のセッションを中断しますか？')) {
-                    showScreen('mainMenu');
-                }
-            });
-            document.getElementById('mic-btn').addEventListener('click', toggleMic);
-
-            // Result Screen
-            document.getElementById('next-question-btn-result').addEventListener('click', () => {
-                state.currentQuiz.currentIndex++;
-                showScreen('quiz');
-                loadNextQuestion();
-            });
-            document.querySelectorAll('.srs-level-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const levelChange = parseInt(e.currentTarget.dataset.levelChange, 10);
-                    const question = state.currentQuiz.questions[state.currentQuiz.currentIndex];
-                    updateSrsLevel(question, levelChange);
-                });
-            });
-            document.getElementById('chat-send-btn').addEventListener('click', handleChatSend);
-            document.getElementById('chat-input').addEventListener('keypress', (e) => e.key === 'Enter' && handleChatSend());
-            document.getElementById('chat-mic-btn').addEventListener('click', toggleChatMic);
-
-            // History Screen
-            document.getElementById('back-to-menu-from-history').addEventListener('click', () => showScreen('mainMenu'));
-            document.getElementById('history-filter').addEventListener('change', updateHistoryScreen);
-
-            // Custom Sets Screen
-            document.getElementById('back-to-menu-from-custom-sets').addEventListener('click', () => showScreen('mainMenu'));
-            document.getElementById('upload-csv-btn').addEventListener('click', handleFileUpload);
-            document.getElementById('custom-set-list').addEventListener('click', e => {
-                if (e.target.classList.contains('start-custom-quiz-btn')) {
-                    startQuiz('custom', e.target.dataset.setId);
-                }
-                if (e.target.classList.contains('delete-custom-set-btn')) {
-                    deleteCustomSet(e.target.dataset.setId);
-                }
-            });
-        }
-        
-        // --- ヘルパー関数 ---
-        function base64ToArrayBuffer(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        function pcmToWav(pcmData, sampleRate) {
-            const header = new ArrayBuffer(44);
-            const view = new DataView(header);
-            const pcmLength = pcmData.length * 2; // 16-bit
-            const totalLength = pcmLength + 36;
-            
-            // RIFF
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, totalLength, true);
-            writeString(view, 8, 'WAVE');
-            // fmt
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true); // Subchunk1Size for PCM
-            view.setUint16(20, 1, true); // AudioFormat for PCM
-            view.setUint16(22, 1, true); // NumChannels
-            view.setUint32(24, sampleRate, true); // SampleRate
-            view.setUint32(28, sampleRate * 2, true); // ByteRate
-            view.setUint16(32, 2, true); // BlockAlign
-            view.setUint16(34, 16, true); // BitsPerSample
-            // data
-            writeString(view, 36, 'data');
-            view.setUint32(40, pcmLength, true);
-
-            const wav = new Blob([view, pcmData], { type: 'audio/wav' });
-            return wav;
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
         }
 
     </script>
