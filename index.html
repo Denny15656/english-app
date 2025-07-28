@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.9";
+        const APP_VERSION = "3.35.10";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -150,6 +150,8 @@
         let audioCtx;
         let currentAiResponseAudio;
         let isStreamingAiResponse = false;
+        let unsubscribeListeners = [];
+
 
         // --- DOM要素 ---
         const dom = {
@@ -254,7 +256,8 @@
             }
             showScreen('loading');
             updateHeader();
-            await loadAllUserData();
+            loadAllUserData();
+            // Don't wait for data to render main menu, snapshot will update it
             renderMainMenu();
             showScreen('mainMenu');
         }
@@ -264,43 +267,44 @@
             currentUser = null;
             questionStats.clear();
             customProblemSets = [];
+            
+            // Unsubscribe from old listeners
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
+
             updateHeader();
             renderAuthScreen();
             showScreen('auth');
         }
 
         // --- データ管理 (Firestore) ---
-        async function loadAllUserData() {
-            if (!currentUser) return Promise.resolve();
-            const statsPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
+        function loadAllUserData() {
+            if (!currentUser) return;
+            // Clear old listeners before setting new ones
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
+            
+            const statsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
                 questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
-                resolve();
-            }, error => {
-                console.error("Error fetching question stats:", error);
-                resolve();
-            }));
+                if (!dom.screens.mainMenu.classList.contains('hidden')) renderMainMenu();
+            }, error => console.error("Error fetching question stats:", error));
 
-            const setsPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/problemSets`), snapshot => {
+            const setsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/problemSets`), snapshot => {
                 customProblemSets = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
                 allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
                 customProblemSets.forEach(set => {
                     if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
                 });
-                resolve();
-            }, error => {
-                console.error("Error fetching custom sets:", error);
-                resolve();
-            }));
+                if (!dom.screens.mainMenu.classList.contains('hidden')) renderMainMenu();
+                if (!dom.screens.customSets.classList.contains('hidden')) renderCustomSetsScreen();
+            }, error => console.error("Error fetching custom sets:", error));
             
-            const historyPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/history`), snapshot => {
+            const historyUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/history`), snapshot => {
                 allHistory = snapshot.docs.map(d => ({ ...d.data(), id: d.id}));
-                resolve();
-            }, error => {
-                console.error("Error fetching history:", error);
-                resolve();
-            }));
+                if (!dom.screens.history.classList.contains('hidden')) renderHistoryScreen();
+            }, error => console.error("Error fetching history:", error));
 
-            return Promise.all([statsPromise, setsPromise, historyPromise]);
+            unsubscribeListeners.push(statsUnsub, setsUnsub, historyUnsub);
         }
         
         async function updateQuestionSRS(question, isCorrect) {
@@ -520,8 +524,8 @@
             const q = activeQuiz.sentences[activeQuiz.index];
             const userAnswer = isSubmitting ? document.getElementById('user-answer').value : '';
             dom.screens.quiz.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 max-w-2xl mx-auto">
-                     <div id="loading-screen-quiz" class="absolute inset-0 bg-white/70 flex-col items-center justify-center rounded-xl ${isSubmitting ? 'flex' : 'hidden'}">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 max-w-2xl mx-auto relative">
+                     <div id="loading-screen-quiz" class="absolute inset-0 bg-white/70 flex-col items-center justify-center rounded-xl ${isSubmitting ? 'flex' : 'hidden'} z-20">
                         <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-16 w-16"></div>
                         <p class="mt-4 text-gray-600">AIが採点中です...</p>
                         <p class="mt-2 text-sm text-gray-500 p-2 bg-blue-50 rounded">${englishTips[Math.floor(Math.random() * englishTips.length)]}</p>
@@ -570,7 +574,9 @@
                     <div id="conversation-log" class="space-y-3 mb-4 p-2 bg-white rounded-lg max-h-48 overflow-y-auto border"></div>
                     <div class="flex flex-col items-center">
                         <button id="ask-ai-voice-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 flex items-center justify-center disabled:bg-gray-400 relative">
-                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4z"></path><path d="M3.204 7.636A6.974 6.974 0 002 11h2a5 5 0 015-5v2.586l-2.707-2.707A6.969 6.969 0 003.204 7.636zM14.796 14.364A6.969 6.969 0 0017.5 11h-2a5 5 0 01-5 5v-2.586l2.707 2.707z"></path></svg>
+                           <span class="relative flex h-6 w-6 mr-2">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4z"></path><path d="M3.204 7.636A6.974 6.974 0 002 11h2a5 5 0 015-5v2.586l-2.707-2.707A6.969 6.969 0 003.204 7.636zM14.796 14.364A6.969 6.969 0 0017.5 11h-2a5 5 0 01-5 5v-2.586l2.707 2.707z"></path></svg>
+                           </span>
                              音声で質問
                         </button>
                         <p id="ai-conversation-status" class="text-sm text-gray-500 mt-2 h-4"></p>
@@ -810,13 +816,13 @@
              
              recognition.onstart = () => {
                  isRecognizing = true;
-                 micBtn?.classList.add('text-red-500', 'mic-recording');
+                 micBtn?.querySelector('span')?.classList.add('mic-recording');
                  if(statusEl) statusEl.textContent = '聞いています...';
              };
              
              recognition.onend = () => {
                  isRecognizing = false;
-                 micBtn?.classList.remove('text-red-500', 'mic-recording');
+                 micBtn?.querySelector('span')?.classList.remove('mic-recording');
                  if(statusEl && statusEl.textContent === '聞いています...') statusEl.textContent = '';
              };
              
@@ -858,18 +864,168 @@
 
             conversationContext.history.push({ role: 'user', parts: [{ text: transcript }]});
             
-            // This is a placeholder for the actual streaming logic
-            // In a real app, you would use streamGenerateContent
-            const aiResponseText = "これはAIからの応答のサンプルです。";
+            const aiResponseText = await streamAIConversationResponse(conversationContext.history, logEl, statusEl);
             conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
             
-            logEl.innerHTML += `<div class="text-left"><span class="inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm">${aiResponseText}</span></div>`;
-            logEl.scrollTop = logEl.scrollHeight;
+            if(aiResponseText && !aiResponseText.startsWith("エラー")) {
+                statusEl.textContent = '音声を生成中...';
+                try {
+                    const { audioData, mimeType } = await getAIAudioResponse(aiResponseText);
+                    if (audioData) {
+                        await playAIAudio(audioData, mimeType);
+                    } else { throw new Error("TTS API returned no audio data."); }
+                } catch(e) {
+                     console.error("Gemini TTS failed, falling back to browser speech.", e);
+                     speakText(aiResponseText, 'ja-JP');
+                }
+            }
 
-            speakText(aiResponseText, 'ja-JP', () => {
-                statusEl.textContent = '';
-                askBtn.disabled = false;
+            statusEl.textContent = '';
+            askBtn.disabled = false;
+        }
+
+        async function streamAIConversationResponse(history, logElement, statusElement) {
+             isStreamingAiResponse = true;
+             let currentAiResponseText = "";
+             const payload = { contents: history };
+             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
+
+             try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                const aiMessageContainer = document.createElement('div');
+                aiMessageContainer.className = 'text-left';
+                const aiMessageBubble = document.createElement('span');
+                aiMessageBubble.className = 'inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm';
+                aiMessageContainer.appendChild(aiMessageBubble);
+                logElement.appendChild(aiMessageContainer);
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.substring(6);
+                            try {
+                                const chunk = JSON.parse(jsonStr);
+                                const textPart = chunk.candidates[0]?.content?.parts[0]?.text || '';
+                                currentAiResponseText += textPart;
+                                aiMessageBubble.textContent = currentAiResponseText;
+                                logElement.scrollTop = logElement.scrollHeight;
+                            } catch (e) { /* Ignore parsing errors for incomplete JSON */ }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Streaming API error:", error);
+                currentAiResponseText = "エラーが発生しました。もう一度試してください。";
+                logElement.lastChild.querySelector('span').textContent = currentAiResponseText;
+            } finally {
+                isStreamingAiResponse = false;
+                return currentAiResponseText;
+            }
+        }
+        
+        async function getAIAudioResponse(textToSpeak) {
+             const payload = {
+                contents: [{ parts: [{ text: textToSpeak }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error("API request failed");
+                const result = await response.json();
+                const audioPart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                return {
+                    audioData: audioPart?.inlineData?.data,
+                    mimeType: audioPart?.inlineData?.mimeType
+                };
+            } catch (error) {
+                 console.error("Error calling TTS Gemini API:", error);
+                 return { audioData: null };
+            }
+        }
+        
+        function playAIAudio(audioData, mimeType) {
+            return new Promise((resolve, reject) => {
+                if (!audioData || !audioCtx) {
+                    reject(new Error("No audio data or audio context"));
+                    return;
+                }
+                try {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                    const pcmBuffer = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmBuffer);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    currentAiResponseAudio = new Audio(audioUrl);
+                    currentAiResponseAudio.play();
+                    currentAiResponseAudio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                        currentAiResponseAudio = null;
+                        resolve();
+                    };
+                    currentAiResponseAudio.onerror = (e) => reject(e);
+                } catch (error) {
+                    console.error("Error playing AI audio:", error);
+                    reject(error);
+                }
             });
+        }
+        
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bytesPerSample = 2;
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcmData.length * bytesPerSample;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            view.setUint32(0, 1380533830, false); // "RIFF"
+            view.setUint32(4, 36 + dataSize, true);
+            view.setUint32(8, 1463899717, false); // "WAVE"
+            view.setUint32(12, 1718449184, false); // "fmt "
+            view.setUint32(16, 16, true);
+            view.setUint32(20, 1, true); // PCM
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, 16, true);
+            view.setUint32(36, 1684108385, false); // "data"
+            view.setUint32(40, dataSize, true);
+            
+            const pcm16 = new Int16Array(buffer, 44, pcmData.length);
+            pcm16.set(pcmData);
+
+            return new Blob([view], { type: 'audio/wav' });
         }
         
         function speakText(text, lang = 'ja-JP', onEndCallback = () => {}) {
