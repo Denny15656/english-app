@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.11";
+        const APP_VERSION = "3.35.12";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -152,6 +152,10 @@
         let isStreamingAiResponse = false;
         let unsubscribeListeners = [];
 
+        // --- ユーティリティ ---
+        const log = (message, ...args) => console.log(`[App v${APP_VERSION}] ${message}`, ...args);
+        const error = (message, ...args) => console.error(`[App v${APP_VERSION}] ${message}`, ...args);
+
 
         // --- DOM要素 ---
         const dom = {
@@ -175,7 +179,7 @@
         
         // --- 初期化 ---
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log(`Initializing app v${APP_VERSION}...`);
+            log("DOM content loaded. Initializing...");
             dom.version.textContent = `v${APP_VERSION}`;
 
             renderModalTemplates();
@@ -189,6 +193,7 @@
             showScreen('loading');
 
             if (!isFirebaseInitialized) {
+                error("Firebase initialization failed.");
                 renderAuthScreen();
                 showScreen('auth');
                 const signinBtn = document.getElementById('signin-btn');
@@ -198,21 +203,17 @@
                 }
             } else {
                 try {
-                    // Wait for any redirect operations to complete before setting up the auth state listener.
-                    // This is crucial for mobile redirect sign-in.
+                    log("Checking for redirect result...");
                     await getRedirectResult(auth);
+                    log("Redirect result processed.");
                     setupAuthObserver();
-                } catch (error) {
-                    console.error("Error processing redirect result:", error);
+                } catch (e) {
+                    error("Error processing redirect result:", e);
                     renderAuthScreen();
                     showScreen('auth');
                     const authErrorEl = document.getElementById('auth-error');
-                    if(authErrorEl) authErrorEl.textContent = `認証エラー: ${error.message}`;
+                    if(authErrorEl) authErrorEl.textContent = `認証エラー: ${e.code || e.message}`;
                 }
-            }
-            
-            if (!apiKey && isFirebaseInitialized && !auth.currentUser) {
-                showModal('apiKey');
             }
         });
 
@@ -232,18 +233,22 @@
                 db = getFirestore(app);
                 setPersistence(auth, browserLocalPersistence);
                 isFirebaseInitialized = true;
-            } catch (error) {
-                console.error("Firebase Initialization Error:", error);
+                log("Firebase initialized successfully.");
+            } catch (e) {
+                error("Firebase Initialization Error:", e);
                 isFirebaseInitialized = false;
             }
         }
 
         function setupAuthObserver() {
-            if (!isFirebaseInitialized) return;
-
+            log("Setting up auth state observer.");
             onAuthStateChanged(auth, user => {
+                log("Auth state changed. User:", user ? user.uid : null);
                 if (user) {
-                    if (currentUser?.uid === user.uid) return;
+                    if (currentUser?.uid === user.uid) {
+                        log("Auth state change is for the same user, ignoring.");
+                        return;
+                    }
                     currentUser = user;
                     onLogin();
                 } else {
@@ -254,21 +259,27 @@
         
         // --- 認証フロー ---
         async function onLogin() {
-            if (!apiKey) {
-                showModal('apiKey');
-                renderAuthScreen();
-                showScreen('auth');
-                return;
+            try {
+                log(`User ${currentUser.uid} logged in.`);
+                if (!apiKey) {
+                    log("API key not found, showing modal.");
+                    showModal('apiKey');
+                    renderAuthScreen();
+                    showScreen('auth');
+                    return;
+                }
+                showScreen('loading');
+                updateHeader();
+                await loadAllUserData();
+                renderMainMenu();
+                showScreen('mainMenu');
+            } catch (e) {
+                error("Error during login process:", e);
             }
-            showScreen('loading');
-            updateHeader();
-            loadAllUserData();
-            renderMainMenu();
-            showScreen('mainMenu');
         }
 
         function onLogout() {
-            if(currentUser) console.log("User signed out.");
+            if(currentUser) log("User signed out.");
             currentUser = null;
             questionStats.clear();
             customProblemSets = [];
@@ -282,15 +293,16 @@
         }
 
         // --- データ管理 (Firestore) ---
-        function loadAllUserData() {
+        async function loadAllUserData() {
             if (!currentUser) return;
+            log("Loading all user data...");
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
             
             const statsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
                 questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
                 if (!dom.screens.mainMenu.classList.contains('hidden')) renderMainMenu();
-            }, error => console.error("Error fetching question stats:", error));
+            }, e => error("Error fetching question stats:", e));
 
             const setsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/problemSets`), snapshot => {
                 customProblemSets = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
@@ -300,14 +312,15 @@
                 });
                 if (!dom.screens.mainMenu.classList.contains('hidden')) renderMainMenu();
                 if (!dom.screens.customSets.classList.contains('hidden')) renderCustomSetsScreen();
-            }, error => console.error("Error fetching custom sets:", error));
+            }, e => error("Error fetching custom sets:", e));
             
             const historyUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/history`), snapshot => {
                 allHistory = snapshot.docs.map(d => ({ ...d.data(), id: d.id}));
                 if (!dom.screens.history.classList.contains('hidden')) renderHistoryScreen();
-            }, error => console.error("Error fetching history:", error));
+            }, e => error("Error fetching history:", e));
 
             unsubscribeListeners.push(statsUnsub, setsUnsub, historyUnsub);
+            log("User data listeners attached.");
         }
         
         async function updateQuestionSRS(question, isCorrect) {
@@ -377,9 +390,9 @@
                 statusEl.textContent = 'アップロードに成功しました！';
                 titleInput.value = '';
                 fileInput.value = '';
-            } catch (error) {
-                console.error("Upload error:", error);
-                statusEl.textContent = `エラー: ${error.message}`;
+            } catch (e) {
+                error("Upload error:", e);
+                statusEl.textContent = `エラー: ${e.message}`;
             } finally {
                  setTimeout(() => {
                     statusEl.textContent = '';
@@ -394,8 +407,8 @@
                 onConfirm: async () => {
                     try {
                         await deleteDoc(doc(db, `users/${currentUser.uid}/problemSets`, setId));
-                    } catch (error) {
-                        console.error("Delete error:", error);
+                    } catch (e) {
+                        error("Delete error:", e);
                         alert("削除中にエラーが発生しました。");
                     }
                     hideModal('deleteConfirm');
@@ -784,9 +797,9 @@
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 const result = await response.json();
                 return JSON.parse(result.candidates[0].content.parts[0].text);
-            } catch (error) {
-                console.error("AI Evaluation Error:", error);
-                return { isCorrect: false, feedback: `AIによる採点ができませんでした。エラー: ${error.message}` };
+            } catch (e) {
+                error("AI Evaluation Error:", e);
+                return { isCorrect: false, feedback: `AIによる採点ができませんでした。エラー: ${e.message}` };
             }
         }
         
@@ -832,7 +845,7 @@
              };
              
              recognition.onerror = (event) => {
-                 console.error('Speech Recognition Error:', event.error);
+                 error('Speech Recognition Error:', event.error);
                  if(statusEl) statusEl.textContent = `エラー: ${event.error}`;
              };
              
@@ -856,6 +869,7 @@
         }
 
         async function handleVoiceQuestion(transcript) {
+            log("Handling voice question:", transcript);
             const logEl = document.getElementById('conversation-log');
             const statusEl = document.getElementById('ai-conversation-status');
             const askBtn = document.getElementById('ask-ai-voice-btn');
@@ -870,7 +884,9 @@
             conversationContext.history.push({ role: 'user', parts: [{ text: transcript }]});
             
             const aiResponseText = await streamAIConversationResponse(conversationContext.history, logEl, statusEl);
-            conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
+            if (aiResponseText) {
+                 conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
+            }
             
             if(aiResponseText && !aiResponseText.startsWith("エラー")) {
                 statusEl.textContent = '音声を生成中...';
@@ -880,7 +896,7 @@
                         await playAIAudio(audioData, mimeType);
                     } else { throw new Error("TTS API returned no audio data."); }
                 } catch(e) {
-                     console.error("Gemini TTS failed, falling back to browser speech.", e);
+                     error("Gemini TTS failed, falling back to browser speech.", e);
                      speakText(aiResponseText, 'ja-JP');
                 }
             }
@@ -889,15 +905,16 @@
             askBtn.disabled = false;
         }
 
-        async function streamAIConversationResponse(history, logElement, statusElement) {
+        async function streamAIConversationResponse(history, logElement) {
              isStreamingAiResponse = true;
              let currentAiResponseText = "";
              const payload = { contents: history };
              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
 
              try {
+                log("Streaming AI response from Gemini...");
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                if (!response.ok) throw new Error(`API request failed with status ${response.status} ${await response.text()}`);
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -931,8 +948,9 @@
                         }
                     }
                 }
-            } catch (error) {
-                console.error("Streaming API error:", error);
+                log("Streaming complete.");
+            } catch (e) {
+                error("Streaming API error:", e);
                 currentAiResponseText = "エラーが発生しました。もう一度試してください。";
                 const errorContainer = document.createElement('div');
                 errorContainer.className = 'text-left';
@@ -964,8 +982,8 @@
                     audioData: audioPart?.inlineData?.data,
                     mimeType: audioPart?.inlineData?.mimeType
                 };
-            } catch (error) {
-                 console.error("Error calling TTS Gemini API:", error);
+            } catch (e) {
+                 error("Error calling TTS Gemini API:", e);
                  return { audioData: null };
             }
         }
@@ -991,9 +1009,9 @@
                         resolve();
                     };
                     currentAiResponseAudio.onerror = (e) => reject(e);
-                } catch (error) {
-                    console.error("Error playing AI audio:", error);
-                    reject(error);
+                } catch (e) {
+                    error("Error playing AI audio:", e);
+                    reject(e);
                 }
             });
         }
@@ -1044,7 +1062,7 @@
                 utterance.lang = lang;
                 utterance.onend = onEndCallback;
                 utterance.onerror = (e) => {
-                    console.error("SpeechSynthesis Error:", e);
+                    error("SpeechSynthesis Error:", e);
                     onEndCallback();
                 };
                 window.speechSynthesis.speak(utterance);
@@ -1082,16 +1100,18 @@
         // --- 認証ハンドラ ---
         function isMobile() { return /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent); }
         function handleSignIn() {
+            log("Sign-in button clicked.");
             const provider = new GoogleAuthProvider();
             const method = isMobile() ? signInWithRedirect : signInWithPopup;
+            log(`Using sign-in method: ${isMobile() ? 'Redirect' : 'Popup'}`);
             method(auth, provider).catch(err => {
-                console.error("Signin failed", err);
+                error("Signin failed", err);
                 const authErrorEl = document.getElementById('auth-error');
-                if(authErrorEl) authErrorEl.textContent = `エラー: ${err.message}`;
+                if(authErrorEl) authErrorEl.textContent = `エラー: ${err.code || err.message}`;
             });
         }
         function handleSignOut() {
-            signOut(auth).catch(err => console.error("Signout failed", err));
+            signOut(auth).catch(err => error("Signout failed", err));
         }
 
         // --- APIキー & 設定管理 ---
