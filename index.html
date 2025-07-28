@@ -136,12 +136,13 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
         // --- App Version ---
-        const APP_VERSION = "3.35.2";
+        const APP_VERSION = "3.35.3";
 
         // --- グローバル変数と状態管理 ---
-        let app, auth, db;
+        let app, auth;
         let currentUser = null;
         let apiKey = null;
+        let isFirebaseInitialized = false;
         
         // --- DOM要素 ---
         const screens = {
@@ -163,7 +164,20 @@
             initFirebase();
             loadApiKey();
             initEventListeners();
-            showScreen('loading');
+            
+            if (!isFirebaseInitialized) {
+                // If Firebase fails to init, we cannot proceed with auth.
+                // Show auth screen but with disabled button.
+                showScreen('auth');
+                const signinBtn = document.getElementById('signin-btn');
+                if (signinBtn) {
+                    signinBtn.disabled = true;
+                    signinBtn.innerHTML = 'バックエンド接続エラー';
+                }
+            } else {
+                setupAuthObserver();
+                showScreen('loading');
+            }
             
             if (!apiKey) {
                 showModal('apiKey');
@@ -182,25 +196,21 @@
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 setPersistence(auth, browserLocalPersistence);
-                setupAuthObserver();
+                isFirebaseInitialized = true;
             } catch (error) {
                 console.error("Firebaseの初期化に失敗しました:", error);
-                const loadingScreen = document.getElementById('screen-loading');
-                if (loadingScreen) {
-                    loadingScreen.innerHTML = `
-                        <div class="text-center p-6 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-lg max-w-lg mx-auto">
-                            <h2 class="text-xl font-bold mb-2">アプリの初期化エラー</h2>
-                            <p>アプリケーションの起動に必要な設定を読み込めませんでした。これにより、アプリの機能が利用できません。</p>
-                            <p class="mt-4 text-sm bg-red-100 dark:bg-red-800/30 p-2 rounded">
-                                <strong>技術的な詳細:</strong> ${error.message}
-                            </p>
-                        </div>
-                    `;
-                }
+                isFirebaseInitialized = false;
+                const appContainer = document.getElementById('app');
+                const errorBanner = document.createElement('div');
+                errorBanner.className = 'bg-red-600 text-white p-3 text-center text-sm sticky top-0 z-50';
+                errorBanner.innerHTML = `<b>初期化エラー:</b> Firebaseに接続できません。機能は制限されます。(詳細: ${error.message})`;
+                appContainer.prepend(errorBanner);
             }
         }
 
         function setupAuthObserver() {
+            if (!isFirebaseInitialized) return;
+
             getRedirectResult(auth)
                 .then((result) => {
                     if (result) console.log("Redirect result successfully handled.", result.user);
@@ -216,8 +226,12 @@
                     console.log("User signed in:", user.uid);
                     onLogin();
                 } else {
-                    if (!currentUser) return;
-                    console.log("User signed out.");
+                    if (currentUser === null && !user) {
+                        // This case happens on initial load when user is not signed in.
+                        // It's not a sign-out event, so we just show the auth screen.
+                    } else {
+                        console.log("User signed out.");
+                    }
                     onLogout();
                 }
             });
@@ -329,7 +343,7 @@
                 hideModal('apiKey');
                 if (auth.currentUser) {
                    onLogin();
-                } else {
+                } else if(isFirebaseInitialized) {
                     showScreen('auth');
                 }
             } else {
