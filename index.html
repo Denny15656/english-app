@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.16";
+        const APP_VERSION = "3.35.17";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -246,6 +246,7 @@
                     await handleLogin();
                 } else {
                     if (currentUser === null) {
+                         handleLogout(); // Ensure logout screen shows if initial state is logged out
                         return;
                     }
                     currentUser = null;
@@ -461,7 +462,7 @@
         }
 
         function showErrorScreen(message, details = '') {
-            renderAuthScreen(); // Show a basic auth screen structure
+            renderAuthScreen(); 
             const authErrorEl = document.getElementById('auth-error');
             if (authErrorEl) {
                 authErrorEl.innerHTML = `${message}<br><small class="text-gray-400">${details}</small>`;
@@ -624,6 +625,12 @@
         }
 
         function renderQuizResult(result) {
+            const quizLoader = document.getElementById('loading-screen-quiz');
+            if (quizLoader) {
+                quizLoader.classList.remove('flex');
+                quizLoader.classList.add('hidden');
+            }
+
             const resultArea = document.getElementById('quiz-result-area');
             const question = activeQuiz.sentences[activeQuiz.index];
             const userAnswer = document.getElementById('user-answer').value;
@@ -1258,4 +1265,4 @@
         }
     </script>
 </body>
-</ht" of the code in your answ
+</html>
