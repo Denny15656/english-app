@@ -11,9 +11,6 @@
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        .streak-fire {
-            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ff7800, 0 0 20px #ff7800, 0 0 25px #ff7800, 0 0 30px #ff7800, 0 0 35px #ff7800;
-        }
         .modal {
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
@@ -24,30 +21,19 @@
         .btn {
             @apply px-4 py-2 rounded-lg font-semibold text-white transition-all duration-200 ease-in-out shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
         }
-        .btn-primary {
-            @apply bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300;
-        }
-        .btn-secondary {
-            @apply bg-gray-600 hover:bg-gray-700 focus:ring-4 focus:ring-gray-300;
-        }
-        .btn-success {
-            @apply bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300;
-        }
-        .btn-danger {
-            @apply bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300;
-        }
+        .btn-primary { @apply bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300; }
+        .btn-secondary { @apply bg-gray-600 hover:bg-gray-700 focus:ring-4 focus:ring-gray-300; }
+        .btn-success { @apply bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300; }
+        .btn-danger { @apply bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300; }
         .loader {
             border-top-color: #3498db;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .tooltip {
-            @apply invisible absolute;
-        }
-        .has-tooltip:hover .tooltip {
-            @apply visible z-50;
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .tooltip { @apply invisible absolute; }
+        .has-tooltip:hover .tooltip { @apply visible z-50; }
+        .review-count-badge {
+            @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center;
         }
     </style>
 </head>
@@ -69,10 +55,13 @@
         </header>
 
         <!-- Main Content -->
-        <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+        <main id="main-content" class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
             <!-- Loading Screen -->
             <div id="screen-loading" class="flex items-center justify-center h-full">
-                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+                <div class="text-center">
+                    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div>
+                    <p class="mt-4 text-gray-500">データを読み込んでいます...</p>
+                </div>
             </div>
             
             <!-- Auth Screen -->
@@ -81,10 +70,6 @@
                     <h2 class="text-2xl font-bold mb-2">AI英作文練習</h2>
                     <p id="auth-version-display" class="text-xs text-gray-500 mb-4"></p>
                     <p class="text-gray-600 dark:text-gray-400 mb-6">学習データを安全に保存・同期するために、Googleアカウントでサインインしてください。</p>
-                    <ul class="text-left mb-8 space-y-2 text-gray-600 dark:text-gray-400">
-                        <li class="flex items-start"><svg class="w-5 h-5 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>進捗が自動で保存され、どのデバイスからでも学習を再開できます。</span></li>
-                        <li class="flex items-start"><svg class="w-5 h-5 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>新しいパスワードを覚える必要はありません。</span></li>
-                    </ul>
                     <button id="signin-btn" class="btn btn-primary w-full flex items-center justify-center">
                         <svg class="w-5 h-5 mr-2" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
                         Googleでサインイン
@@ -92,23 +77,13 @@
                     <p id="auth-error" class="text-red-500 mt-4 h-5"></p>
                 </div>
             </div>
+            
+            <!-- Main Menu Screen -->
+            <div id="screen-main-menu" class="hidden"></div>
 
-            <!-- LoggedIn Screen -->
-            <div id="screen-loggedin" class="hidden">
-                <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center">
-                   <h2 class="text-2xl font-bold mb-4">ログイン成功！</h2>
-                   <p>ようこそ、<span id="loggedin-username" class="font-semibold"></span>さん！</p>
-                   <p class="text-sm text-gray-500 mt-2">現在、認証機能のデバッグ中です。</p>
-                   <p class="mt-6">この画面が表示されれば、PCとモバイルでのログイン・ログアウト機能は正常に動作しています。</p>
-               </div>
-            </div>
+            <!-- Quiz Screen -->
+            <div id="screen-quiz" class="hidden max-w-2xl mx-auto"></div>
 
-            <!-- Learning related screens are kept in the DOM but hidden and unused -->
-            <div id="screen-main-menu" class="hidden">...</div>
-            <div id="screen-quiz" class="hidden">...</div>
-            <div id="screen-result" class="hidden">...</div>
-            <div id="screen-history" class="hidden">...</div>
-            <div id="screen-custom-sets" class="hidden">...</div>
         </main>
         <footer class="text-center text-xs text-gray-400 p-4">
             <p id="version-display"></p>
@@ -119,7 +94,7 @@
     <div id="api-key-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-lg w-full">
             <h2 class="text-2xl font-bold mb-4">APIキーが必要です</h2>
-            <p class="mb-4 text-gray-600 dark:text-gray-400">AI機能を利用するには、Google AI Studioで取得したAPIキーが必要です。キーはあなたのブラウザに安全に保存され、外部に送信されることはありません。</p>
+            <p class="mb-4 text-gray-600 dark:text-gray-400">AI機能を利用するには、Google AI Studioで取得したAPIキーが必要です。キーはあなたのブラウザに安全に保存されます。</p>
             <input type="password" id="api-key-input" class="w-full p-2 border rounded-lg mb-4 bg-gray-50 dark:bg-gray-700" placeholder="ここにAPIキーを貼り付け">
             <div class="flex justify-end space-x-4">
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">キーを取得</a>
@@ -128,38 +103,63 @@
         </div>
     </div>
     
-    <!-- (Settings Modal is removed for simplicity in this version) -->
-    
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        // --- App Version ---
-        const APP_VERSION = "3.35.5";
+        import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- グローバル変数と状態管理 ---
-        let app, auth;
+        // --- App Version ---
+        const APP_VERSION = "3.35.7";
+
+        // --- 定数 ---
+        const MASTERED_LEVEL = 5;
+        const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60, 120, 240];
+        const defaultSentences = [
+            { ja: "このアプリは英語を学ぶのにとても役立ちます。", en: "This app is very helpful for learning English." },
+            { ja: "昨日は友達と映画を見に行きました。", en: "I went to see a movie with my friend yesterday." },
+            { ja: "もし時間があれば、この本を読むべきです。", en: "If you have time, you should read this book." },
+            { ja: "将来、海外で働きたいと思っています。", en: "I want to work abroad in the future." },
+            { ja: "この問題は私が思っていたよりも難しいです。", en: "This problem is more difficult than I thought." },
+        ];
+        const englishTips = ["'advice'は不可算名詞なので、'an advice'ではなく'a piece of advice'と言います。", "'very'は形容詞を修飾しますが、'much'は動詞を修飾します。'I like it very much.'", "'borrow'は「借りる」、'lend'は「貸す」です。主語に注意しましょう。", "未来のことでも、確定している予定は現在進行形で表現できます。'I'm leaving tomorrow.'", "'fewer'は数えられる名詞に、'less'は数えられない名詞に使います。", "英語のリスニング力を上げるには、たくさん聞くことが一番の近道です。"];
+
+        // --- グローバル変数 ---
+        let app, auth, db;
         let currentUser = null;
         let apiKey = null;
         let isFirebaseInitialized = false;
         
+        let questionStats = new Map();
+        let customProblemSets = [];
+        let allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+        let activeQuiz = { sentences: [], type: null, index: 0 };
+        let settings = { maxQuestionsPerSession: 20, questionOrder: 'in-order' };
+
         // --- DOM要素 ---
-        const screens = {
-            loading: document.getElementById('screen-loading'),
-            auth: document.getElementById('screen-auth'),
-            loggedin: document.getElementById('screen-loggedin'),
-        };
-        const modals = {
-            apiKey: document.getElementById('api-key-modal'),
+        const dom = {
+            mainContent: document.getElementById('main-content'),
+            screens: {
+                loading: document.getElementById('screen-loading'),
+                auth: document.getElementById('screen-auth'),
+                mainMenu: document.getElementById('screen-main-menu'),
+                quiz: document.getElementById('screen-quiz'),
+            },
+            modals: {
+                apiKey: document.getElementById('api-key-modal'),
+            },
+            version: document.getElementById('version-display'),
+            authVersion: document.getElementById('auth-version-display'),
+            authContainer: document.getElementById('auth-container'),
+            signinBtn: document.getElementById('signin-btn'),
+            authError: document.getElementById('auth-error'),
         };
         
         // --- 初期化 ---
         document.addEventListener('DOMContentLoaded', () => {
-            console.log(`DOM content loaded. Initializing app v${APP_VERSION}...`);
-            // Display version
-            document.getElementById('version-display').textContent = `v${APP_VERSION}`;
-            document.getElementById('auth-version-display').textContent = `v${APP_VERSION}`;
+            console.log(`Initializing app v${APP_VERSION}...`);
+            dom.version.textContent = `v${APP_VERSION}`;
+            dom.authVersion.textContent = `v${APP_VERSION}`;
 
             initFirebase();
             loadApiKey();
@@ -167,24 +167,20 @@
             
             if (!isFirebaseInitialized) {
                 showScreen('auth');
-                const signinBtn = document.getElementById('signin-btn');
-                if (signinBtn) {
-                    signinBtn.disabled = true;
-                    signinBtn.textContent = 'バックエンド接続エラー';
-                }
+                dom.signinBtn.disabled = true;
+                dom.signinBtn.textContent = 'バックエンド接続エラー';
             } else {
                 setupAuthObserver();
                 showScreen('loading');
             }
             
-            if (!apiKey) {
+            if (!apiKey && isFirebaseInitialized) {
                 showModal('apiKey');
             }
         });
 
         function initFirebase() {
             try {
-                // 画像から取得したFirebaseプロジェクト設定
                 const firebaseConfig = {
                     apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
                     authDomain: "english-app-e5b4d.firebaseapp.com",
@@ -196,35 +192,27 @@
 
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
+                db = getFirestore(app);
                 setPersistence(auth, browserLocalPersistence);
                 isFirebaseInitialized = true;
             } catch (error) {
-                console.error("Firebaseの初期化に失敗しました:", error);
+                console.error("Firebase Initialization Error:", error);
                 isFirebaseInitialized = false;
-                const appContainer = document.getElementById('app');
-                const errorBanner = document.createElement('div');
-                errorBanner.className = 'bg-red-600 text-white p-3 text-center text-sm sticky top-0 z-50';
-                errorBanner.innerHTML = `<b>初期化エラー:</b> Firebaseに接続できません。(詳細: ${error.message})`;
-                appContainer.prepend(errorBanner);
             }
         }
 
         function setupAuthObserver() {
             if (!isFirebaseInitialized) return;
+            
+            getRedirectResult(auth).catch(error => {
+                console.error("Error handling redirect result:", error);
+                dom.authError.textContent = `リダイレクトエラー: ${error.message}`;
+            });
 
-            getRedirectResult(auth)
-                .then((result) => {
-                    if (result) console.log("Redirect result successfully handled.", result.user);
-                }).catch((error) => {
-                    console.error("Error handling redirect result:", error);
-                    document.getElementById('auth-error').textContent = `エラー: ${error.message} (${error.code})`;
-                });
-
-             onAuthStateChanged(auth, user => {
+            onAuthStateChanged(auth, user => {
                 if (user) {
-                    if (currentUser && currentUser.uid === user.uid) return;
+                    if (currentUser?.uid === user.uid) return;
                     currentUser = user;
-                    console.log("User signed in:", user.uid);
                     onLogin();
                 } else {
                     onLogout();
@@ -232,84 +220,98 @@
             });
         }
         
-        // --- 認証 ---
-        function onLogin() {
+        // --- 認証フロー ---
+        async function onLogin() {
             if (!apiKey) {
                 showModal('apiKey');
                 showScreen('auth');
-                document.getElementById('auth-container').innerHTML = '';
                 return;
             }
             showScreen('loading');
             updateHeader();
-            document.getElementById('loggedin-username').textContent = currentUser.displayName;
-            showScreen('loggedin');
+            await loadAllUserData();
+            renderMainMenu();
+            showScreen('mainMenu');
         }
 
         function onLogout() {
             if(currentUser) console.log("User signed out.");
             currentUser = null;
+            questionStats.clear();
+            customProblemSets = [];
             updateHeader();
             showScreen('auth');
         }
 
-        function isMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
+        // --- データ管理 (Firestore) ---
+        async function loadAllUserData() {
+            if (!currentUser) return;
+            const statsPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
+                questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
+                resolve();
+            }));
 
-        function handleSignIn() {
-            const provider = new GoogleAuthProvider();
-            const signinMethod = isMobile() ? signInWithRedirect : signInWithPopup;
-            
-            const signinBtn = document.getElementById('signin-btn');
-            const authErrorEl = document.getElementById('auth-error');
-            signinBtn.disabled = true;
-            signinBtn.innerHTML = `<div class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5 mr-2"></div> 処理中...`;
-            authErrorEl.textContent = '';
-
-            signinMethod(auth, provider)
-                .catch(error => {
-                    console.error("Sign in error:", error);
-                    let message = "サインインに失敗しました。";
-                    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                        message = "認証がキャンセルされました。";
-                    } else if (error.code === 'auth/network-request-failed') {
-                        message = "ネットワーク接続を確認してください。";
-                    }
-                    authErrorEl.textContent = message;
-                })
-                .finally(() => {
-                    signinBtn.disabled = false;
-                     signinBtn.innerHTML = `<svg class="w-5 h-5 mr-2" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg> Googleでサインイン`;
+            const setsPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/problemSets`), snapshot => {
+                customProblemSets = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+                customProblemSets.forEach(set => {
+                    if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
                 });
+                resolve();
+            }));
+            
+            await Promise.all([statsPromise, setsPromise]);
         }
         
-        function handleSignOut() {
-            signOut(auth).catch(error => console.error("Sign out error", error));
+        async function updateQuestionSRS(question, isCorrect) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const stat = questionStats.get(question.ja) || {
+                ja: question.ja,
+                en: question.en,
+                level: 0,
+                attemptCount: 0,
+                correctCount: 0,
+                createdAt: Timestamp.fromDate(today)
+            };
+            
+            stat.attemptCount++;
+            if (isCorrect) {
+                stat.level++;
+                stat.correctCount++;
+            } else {
+                stat.level = Math.max(0, stat.level - 1);
+            }
+            
+            const intervalDays = REVIEW_INTERVALS[Math.min(stat.level, REVIEW_INTERVALS.length - 1)];
+            const nextReviewDate = new Date(today);
+            nextReviewDate.setDate(today.getDate() + intervalDays);
+            
+            stat.nextReviewDate = Timestamp.fromDate(nextReviewDate);
+            stat.lastAttempted = Timestamp.fromDate(now);
+            
+            const docRef = doc(db, `users/${currentUser.uid}/questionStats`, question.ja);
+            await setDoc(docRef, stat, { merge: true });
         }
 
-        // --- UI更新 ---
+
+        // --- UIレンダリング ---
         function showScreen(screenId) {
-            Object.keys(screens).forEach(key => {
-                if(screens[key]) screens[key].classList.add('hidden');
-            });
-            if (screens[screenId]) {
-                screens[screenId].classList.remove('hidden');
-            }
+            Object.values(dom.screens).forEach(screen => screen.classList.add('hidden'));
+            if(dom.screens[screenId]) dom.screens[screenId].classList.remove('hidden');
         }
-        
+
         function showModal(modalId) {
-            if (modals[modalId]) modals[modalId].classList.remove('hidden');
+            if (dom.modals[modalId]) dom.modals[modalId].classList.remove('hidden');
         }
 
         function hideModal(modalId) {
-            if (modals[modalId]) modals[modalId].classList.add('hidden');
+            if (dom.modals[modalId]) dom.modals[modalId].classList.add('hidden');
         }
-
+        
         function updateHeader() {
-            const container = document.getElementById('auth-container');
             if (currentUser) {
-                container.innerHTML = `
+                dom.authContainer.innerHTML = `
                     <div class="has-tooltip relative">
                         <img src="${currentUser.photoURL || 'https://placehold.co/40x40/E2E8F0/4A5568?text=User'}" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer">
                         <div class="tooltip -left-8 mt-2 w-auto p-2 bg-gray-700 text-white text-xs rounded-md shadow-lg">
@@ -322,38 +324,198 @@
                 `;
                 document.getElementById('signout-btn').onclick = handleSignOut;
             } else {
-                container.innerHTML = '';
+                dom.authContainer.innerHTML = '';
             }
         }
         
-        // --- APIキー管理 ---
-        function loadApiKey() {
-            apiKey = localStorage.getItem('geminiApiKey');
+        function renderMainMenu() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            let dueCount = 0;
+            questionStats.forEach(stat => {
+                if(stat.level < MASTERED_LEVEL && stat.nextReviewDate?.toDate() <= today) {
+                    dueCount++;
+                }
+            });
+
+            dom.screens.mainMenu.innerHTML = `
+                <h2 class="text-2xl font-bold text-center mb-6">学習メニュー</h2>
+                <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    <div class="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col">
+                        <h3 class="font-bold text-lg mb-2">📅 今日の復習</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 flex-grow">忘れる直前のタイミングで問題を復習し、記憶を強化します。</p>
+                        <button id="start-review-btn" class="btn btn-success mt-auto" ${dueCount === 0 ? 'disabled' : ''}>復習を開始</button>
+                        ${dueCount > 0 ? `<div class="review-count-badge">${dueCount}</div>` : ''}
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col">
+                        <h3 class="font-bold text-lg mb-2">🚀 新しい問題を学ぶ</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 flex-grow">まだ学習していない新しい問題に挑戦します。</p>
+                        <button id="start-new-btn" class="btn btn-primary mt-auto">学習を開始</button>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col">
+                        <h3 class="font-bold text-lg mb-2">📚 カスタム問題集</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 flex-grow">自分で作成した問題集で集中的に学習します。</p>
+                        <button id="manage-custom-btn" class="btn btn-secondary mt-auto">問題集を管理</button>
+                    </div>
+                </div>`;
+            document.getElementById('start-review-btn')?.addEventListener('click', startReviewQuiz);
+            document.getElementById('start-new-btn')?.addEventListener('click', startNewQuiz);
         }
         
+        function renderQuizScreen(isSubmitting = false) {
+            const q = activeQuiz.sentences[activeQuiz.index];
+            const userAnswer = isSubmitting ? document.getElementById('user-answer').value : '';
+            dom.screens.quiz.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-sm text-gray-500">${activeQuiz.index + 1} / ${activeQuiz.sentences.length}</p>
+                        <button id="quiz-exit-btn" class="text-sm text-gray-500 hover:text-red-500" ${isSubmitting ? 'disabled' : ''}>終了</button>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg mb-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">日本語:</p>
+                        <p class="text-lg font-semibold">${q.ja}</p>
+                    </div>
+                    <textarea id="user-answer" class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-900" rows="4" placeholder="英語で回答を入力..." ${isSubmitting ? 'disabled' : ''}>${userAnswer}</textarea>
+                    <button id="submit-answer-btn" class="btn btn-primary w-full mt-4" ${isSubmitting ? 'disabled' : ''}>
+                        ${isSubmitting ? '<div class="loader w-5 h-5 mx-auto"></div>' : '採点する'}
+                    </button>
+                    <div id="quiz-result-area" class="mt-4"></div>
+                </div>
+            `;
+            if (!isSubmitting) {
+                document.getElementById('submit-answer-btn').addEventListener('click', handleSubmit);
+                document.getElementById('quiz-exit-btn').addEventListener('click', () => {
+                    renderMainMenu();
+                    showScreen('mainMenu');
+                });
+            }
+        }
+
+        function renderQuizResult(result) {
+            const resultArea = document.getElementById('quiz-result-area');
+            const resultColor = result.isCorrect ? 'green' : 'red';
+            resultArea.innerHTML = `
+                <div class="border-l-4 border-${resultColor}-500 bg-${resultColor}-50 dark:bg-opacity-10 p-4 mt-4 rounded">
+                    <h4 class="font-bold text-${resultColor}-700 dark:text-${resultColor}-400">${result.isCorrect ? '正解！' : 'もう一歩！'}</h4>
+                    <p class="text-gray-700 dark:text-gray-300 mt-2">${result.feedback}</p>
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="next-question-btn" class="btn btn-primary">次の問題へ</button>
+                </div>
+            `;
+            document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+        }
+        
+        // --- クイズロジック ---
+        function startNewQuiz() {
+            const newSentences = defaultSentences.filter(s => !questionStats.has(s.ja));
+            if(newSentences.length === 0) {
+                alert("新しい問題は全て学習済みです！");
+                return;
+            }
+            activeQuiz = { sentences: newSentences.slice(0, settings.maxQuestionsPerSession), type: 'new', index: 0 };
+            renderQuizScreen();
+            showScreen('quiz');
+        }
+
+        function startReviewQuiz() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const dueSentences = [];
+            questionStats.forEach((stat) => {
+                if (stat.level < MASTERED_LEVEL && stat.nextReviewDate?.toDate() <= today) {
+                    const sentence = allKnownSentences.get(stat.ja);
+                    if (sentence) dueSentences.push(sentence);
+                }
+            });
+            if (dueSentences.length === 0) {
+                alert("今日復習する問題はありません。");
+                return;
+            }
+            activeQuiz = { sentences: dueSentences.sort(() => Math.random() - 0.5).slice(0, settings.maxQuestionsPerSession), type: 'review', index: 0 };
+            renderQuizScreen();
+            showScreen('quiz');
+        }
+
+        async function handleSubmit() {
+            const userAnswer = document.getElementById('user-answer').value.trim();
+            if (!userAnswer) return;
+            
+            renderQuizScreen(true); // Re-render in submitting state
+
+            const question = activeQuiz.sentences[activeQuiz.index];
+            const result = await getAIEvaluation(question.ja, question.en, userAnswer);
+            
+            await updateQuestionSRS(question, result.isCorrect);
+            renderQuizResult(result);
+        }
+
+        function nextQuestion() {
+            activeQuiz.index++;
+            if (activeQuiz.index >= activeQuiz.sentences.length) {
+                alert("セッション完了！お疲れ様でした。");
+                renderMainMenu();
+                showScreen('mainMenu');
+            } else {
+                renderQuizScreen();
+            }
+        }
+
+        async function getAIEvaluation(japanese, modelAnswer, userAnswer) {
+             const prompt = `あなたは優秀な英語の先生です。以下の日本語の文章を英訳する課題において、ユーザーが提出した英文を評価してください。\n# 指示\n- ユーザーの英文が、日本語の文章の意味を正確に反映しているか評価してください。\n- 文法的に自然で正しい英語かも評価してください。\n- 模範解答と完全に一致している必要はありません。同義語や別の構文が使われていても、意味と文法が正しければ「正解」としてください。\n- ユーザーの解答は音声入力を想定しているため、句読点の欠如に起因する文法的な指摘（例：文が繋がっているなど）は一切しないでください。\n- 文頭の大文字・小文字、文末のピリオド(.)や疑問符(?)、文中のカンマ(,)の有無は採点に影響させないでください。これらは完全に無視してください。\n- 評価結果と、なぜそのように評価したかの短いフィードバックをJSON形式で返してください。フィードバックでは、句読点に関する言及は一切しないでください。\n# 情報\n- 日本語原文: ${japanese}\n- 模範解答: ${modelAnswer}\n- ユーザーの解答: ${userAnswer}`;
+            try {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: { type: "OBJECT", properties: { isCorrect: { "type": "BOOLEAN" }, feedback: { "type": "STRING" } }, required: ["isCorrect", "feedback"] }
+                    }
+                };
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                const result = await response.json();
+                return JSON.parse(result.candidates[0].content.parts[0].text);
+            } catch (error) {
+                console.error("AI Evaluation Error:", error);
+                return { isCorrect: false, feedback: `AIによる採点ができませんでした。エラー: ${error.message}` };
+            }
+        }
+
+
+        // --- イベントリスナー ---
+        function initEventListeners() {
+            dom.signinBtn.addEventListener('click', handleSignIn);
+            document.getElementById('save-api-key-btn').addEventListener('click', saveApiKey);
+        }
+
+        // --- 認証ハンドラ ---
+        function isMobile() { return /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+        function handleSignIn() {
+            const provider = new GoogleAuthProvider();
+            const method = isMobile() ? signInWithRedirect : signInWithPopup;
+            method(auth, provider).catch(err => {
+                console.error("Signin failed", err);
+                dom.authError.textContent = `エラー: ${err.message}`;
+            });
+        }
+        function handleSignOut() {
+            signOut(auth).catch(err => console.error("Signout failed", err));
+        }
+
+        // --- APIキー管理 ---
+        function loadApiKey() { apiKey = localStorage.getItem('geminiApiKey'); }
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value;
             if (key) {
                 apiKey = key;
                 localStorage.setItem('geminiApiKey', key);
                 hideModal('apiKey');
-                if (auth.currentUser) {
-                   onLogin();
-                } else if(isFirebaseInitialized) {
-                    showScreen('auth');
-                }
+                if (currentUser) onLogin();
+                else if(isFirebaseInitialized) showScreen('auth');
             } else {
                 alert('APIキーを入力してください。');
             }
         }
-        
-        // --- イベントリスナー ---
-        function initEventListeners() {
-            document.getElementById('signin-btn').addEventListener('click', handleSignIn);
-            document.getElementById('save-api-key-btn').addEventListener('click', saveApiKey);
-            document.getElementById('api-key-input').addEventListener('keypress', (e) => e.key === 'Enter' && saveApiKey());
-        }
-
     </script>
 </body>
 </html>
