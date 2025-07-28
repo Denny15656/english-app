@@ -136,7 +136,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
         // --- App Version ---
-        const APP_VERSION = "3.35.3";
+        const APP_VERSION = "3.35.5";
 
         // --- グローバル変数と状態管理 ---
         let app, auth;
@@ -166,13 +166,11 @@
             initEventListeners();
             
             if (!isFirebaseInitialized) {
-                // If Firebase fails to init, we cannot proceed with auth.
-                // Show auth screen but with disabled button.
                 showScreen('auth');
                 const signinBtn = document.getElementById('signin-btn');
                 if (signinBtn) {
                     signinBtn.disabled = true;
-                    signinBtn.innerHTML = 'バックエンド接続エラー';
+                    signinBtn.textContent = 'バックエンド接続エラー';
                 }
             } else {
                 setupAuthObserver();
@@ -186,13 +184,16 @@
 
         function initFirebase() {
             try {
-                if (typeof __firebase_config === 'undefined' || !__firebase_config.trim()) {
-                    throw new Error("Firebase configuration variable (__firebase_config) is not available or is empty.");
-                }
-                const firebaseConfig = JSON.parse(__firebase_config);
-                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-                    throw new Error("The provided Firebase configuration is missing essential properties like apiKey or projectId.");
-                }
+                // 画像から取得したFirebaseプロジェクト設定
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCbFhsKdalL867VrkqvalQ_6bliEHFq1qs",
+                    authDomain: "english-app-e5b4d.firebaseapp.com",
+                    projectId: "english-app-e5b4d",
+                    storageBucket: "english-app-e5b4d.appspot.com",
+                    messagingSenderId: "482204446370",
+                    appId: "1:482204446370:web:cc50237afb7abedae531fb"
+                };
+
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 setPersistence(auth, browserLocalPersistence);
@@ -203,7 +204,7 @@
                 const appContainer = document.getElementById('app');
                 const errorBanner = document.createElement('div');
                 errorBanner.className = 'bg-red-600 text-white p-3 text-center text-sm sticky top-0 z-50';
-                errorBanner.innerHTML = `<b>初期化エラー:</b> Firebaseに接続できません。機能は制限されます。(詳細: ${error.message})`;
+                errorBanner.innerHTML = `<b>初期化エラー:</b> Firebaseに接続できません。(詳細: ${error.message})`;
                 appContainer.prepend(errorBanner);
             }
         }
@@ -226,12 +227,6 @@
                     console.log("User signed in:", user.uid);
                     onLogin();
                 } else {
-                    if (currentUser === null && !user) {
-                        // This case happens on initial load when user is not signed in.
-                        // It's not a sign-out event, so we just show the auth screen.
-                    } else {
-                        console.log("User signed out.");
-                    }
                     onLogout();
                 }
             });
@@ -252,6 +247,7 @@
         }
 
         function onLogout() {
+            if(currentUser) console.log("User signed out.");
             currentUser = null;
             updateHeader();
             showScreen('auth');
