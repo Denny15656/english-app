@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.20";
+        const APP_VERSION = "3.35.21";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -149,7 +149,6 @@
         let conversationContext = null;
         let audioCtx;
         let currentAiResponseAudio;
-        let isStreamingAiResponse = false;
         let unsubscribeListeners = [];
 
         // --- ユーティリティ ---
@@ -809,7 +808,7 @@
             const userAnswer = document.getElementById('user-answer').value.trim();
             if (!userAnswer) return;
             
-            renderQuizScreen(true); // Re-render in submitting state
+            renderQuizScreen(true); 
 
             const question = activeQuiz.sentences[activeQuiz.index];
             const result = await getAIEvaluation(question.ja, question.en, userAnswer);
@@ -968,6 +967,8 @@
             let currentAiResponseText = "";
             const payload = { contents: history };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000); 
 
             const aiMessageContainer = document.createElement('div');
             aiMessageContainer.className = 'text-left';
@@ -980,29 +981,48 @@
 
             try {
                 log("Streaming AI response from Gemini...");
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API request failed with status ${response.status} ${await response.text()}`);
+                const response = await fetch(apiUrl, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({ error: { message: "Unknown API error" } }));
+                    throw new Error(`API request failed with status ${response.status}: ${errorBody.error?.message || response.statusText}`);
+                }
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
+                let buffer = '';
                 let isFirstChunk = true;
                 
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done) break;
+                    if (done) {
+                        log("Stream finished.");
+                        break;
+                    }
                     
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); 
+
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const jsonStr = line.substring(6).trim();
                             if (!jsonStr) continue;
                             try {
                                 const parsed = JSON.parse(jsonStr);
+                                if (parsed.error) throw new Error(`API error in stream: ${parsed.error.message}`);
+                                
                                 const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
                                 if (textPart) {
                                     if (isFirstChunk) {
-                                        aiMessageBubble.innerHTML = ''; // Clear loader
+                                        aiMessageBubble.innerHTML = ''; 
                                         aiMessageBubble.classList.remove('items-center');
                                         isFirstChunk = false;
                                     }
@@ -1016,14 +1036,20 @@
                         }
                     }
                 }
-                log("Streaming complete.");
+                
                 if (isFirstChunk) { 
-                    aiMessageBubble.textContent = "AIからの応答がありませんでした。";
+                    currentAiResponseText = "AIからの応答がありませんでした。";
+                    aiMessageBubble.textContent = currentAiResponseText;
                     aiMessageBubble.classList.remove('items-center');
                 }
+
             } catch (e) {
                 error("Streaming API error:", e);
-                currentAiResponseText = `エラーが発生しました: ${e.message}`;
+                if (e.name === 'AbortError') {
+                     currentAiResponseText = "AIからの応答がタイムアウトしました。";
+                } else {
+                     currentAiResponseText = `エラーが発生しました: ${e.message}`;
+                }
                 aiMessageBubble.textContent = currentAiResponseText;
                 aiMessageBubble.classList.remove('bg-gray-200', 'text-gray-800', 'items-center');
                 aiMessageBubble.classList.add('bg-red-200', 'text-red-800');
@@ -1274,4 +1300,4 @@
         }
     </script>
 </body>
-</ht
+</html>
