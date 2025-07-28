@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.19";
+        const APP_VERSION = "3.35.20";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -246,7 +246,7 @@
                     await handleLogin();
                 } else {
                     if (currentUser === null) {
-                         handleLogout(); // Ensure logout screen shows if initial state is logged out
+                         handleLogout(); 
                         return;
                     }
                     currentUser = null;
@@ -325,7 +325,7 @@
                 attachRealtimeListeners();
             } catch(e) {
                 error("Failed to fetch initial user data:", e);
-                throw e; // Propagate error to handleLogin
+                throw e; 
             }
         }
         
@@ -965,7 +965,6 @@
         }
 
         async function streamAIConversationResponse(history, logElement) {
-            isStreamingAiResponse = true;
             let currentAiResponseText = "";
             const payload = { contents: history };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
@@ -986,29 +985,21 @@
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let buffer = '';
                 let isFirstChunk = true;
                 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const jsonStr = line.substring(6).trim();
                             if (!jsonStr) continue;
-
                             try {
-                                const chunk = JSON.parse(jsonStr);
-                                if (chunk.error) {
-                                    throw new Error(`API error in stream: ${chunk.error.message}`);
-                                }
-
-                                const textPart = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                                const parsed = JSON.parse(jsonStr);
+                                const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
                                 if (textPart) {
                                     if (isFirstChunk) {
                                         aiMessageBubble.innerHTML = ''; // Clear loader
@@ -1020,8 +1011,7 @@
                                     logElement.scrollTop = logElement.scrollHeight;
                                 }
                             } catch (e) {
-                                if (e.message.startsWith("API error in stream:")) throw e;
-                                error("JSON parsing error on a stream chunk. String:", jsonStr, "Error:", e);
+                                log("Could not parse JSON chunk:", jsonStr, e);
                             }
                         }
                     }
@@ -1033,14 +1023,12 @@
                 }
             } catch (e) {
                 error("Streaming API error:", e);
-                currentAiResponseText = "エラーが発生しました。もう一度試してください。";
+                currentAiResponseText = `エラーが発生しました: ${e.message}`;
                 aiMessageBubble.textContent = currentAiResponseText;
                 aiMessageBubble.classList.remove('bg-gray-200', 'text-gray-800', 'items-center');
                 aiMessageBubble.classList.add('bg-red-200', 'text-red-800');
-            } finally {
-                isStreamingAiResponse = false;
-                return currentAiResponseText;
-            }
+            } 
+            return currentAiResponseText;
         }
         
         async function getAIAudioResponse(textToSpeak) {
@@ -1286,4 +1274,4 @@
         }
     </script>
 </body>
-</html>
+</ht
