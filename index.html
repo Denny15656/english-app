@@ -11,10 +11,10 @@
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        .modal {
+        .modal-overlay {
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .modal.hidden {
+        .modal-overlay.hidden {
             visibility: hidden;
             opacity: 0;
         }
@@ -35,6 +35,24 @@
         .review-count-badge {
             @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center;
         }
+        /* Mic button animation */
+        .mic-recording::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background-color: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.7; }
+            70% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased">
@@ -45,44 +63,41 @@
         <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
             <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-4 cursor-pointer" id="home-button">
                         <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2V7a2 2 0 012-2h4M5 8h2m4 0h2m-4 4h2m4 0h2"></path></svg>
                         <h1 class="text-xl font-bold">AI英作文練習</h1>
                     </div>
-                    <div id="auth-container" class="flex items-center space-x-4"></div>
+                    <div id="auth-container" class="flex items-center space-x-2 sm:space-x-4"></div>
                 </div>
             </nav>
         </header>
 
         <!-- Main Content -->
         <main id="main-content" class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
-            <!-- Loading Screen -->
-            <div id="screen-loading" class="flex items-center justify-center h-full">
-                <div class="text-center">
-                    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div>
-                    <p class="mt-4 text-gray-500">データを読み込んでいます...</p>
+            <div id="screen-container">
+                <!-- Loading Screen -->
+                <div id="screen-loading" class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div>
+                        <p class="mt-4 text-gray-500">データを読み込んでいます...</p>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Auth Screen -->
-            <div id="screen-auth" class="hidden text-center">
-                <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md p-8">
-                    <h2 class="text-2xl font-bold mb-2">AI英作文練習</h2>
-                    <p id="auth-version-display" class="text-xs text-gray-500 mb-4"></p>
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">学習データを安全に保存・同期するために、Googleアカウントでサインインしてください。</p>
-                    <button id="signin-btn" class="btn btn-primary w-full flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
-                        Googleでサインイン
-                    </button>
-                    <p id="auth-error" class="text-red-500 mt-4 h-5"></p>
-                </div>
-            </div>
-            
-            <!-- Main Menu Screen -->
-            <div id="screen-main-menu" class="hidden"></div>
+                
+                <!-- Auth Screen -->
+                <div id="screen-auth" class="hidden"></div>
+                
+                <!-- Main Menu Screen -->
+                <div id="screen-main-menu" class="hidden"></div>
 
-            <!-- Quiz Screen -->
-            <div id="screen-quiz" class="hidden max-w-2xl mx-auto"></div>
+                <!-- Quiz Screen -->
+                <div id="screen-quiz" class="hidden"></div>
+
+                <!-- Custom Sets Manager Screen -->
+                <div id="screen-custom-sets" class="hidden"></div>
+                
+                 <!-- History Screen -->
+                <div id="screen-history" class="hidden"></div>
+            </div>
 
         </main>
         <footer class="text-center text-xs text-gray-400 p-4">
@@ -91,26 +106,18 @@
     </div>
 
     <!-- Modals -->
-    <div id="api-key-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-lg w-full">
-            <h2 class="text-2xl font-bold mb-4">APIキーが必要です</h2>
-            <p class="mb-4 text-gray-600 dark:text-gray-400">AI機能を利用するには、Google AI Studioで取得したAPIキーが必要です。キーはあなたのブラウザに安全に保存されます。</p>
-            <input type="password" id="api-key-input" class="w-full p-2 border rounded-lg mb-4 bg-gray-50 dark:bg-gray-700" placeholder="ここにAPIキーを貼り付け">
-            <div class="flex justify-end space-x-4">
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">キーを取得</a>
-                <button id="save-api-key-btn" class="btn btn-primary">保存</button>
-            </div>
-        </div>
-    </div>
+    <div id="api-key-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden"></div>
+    <div id="settings-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden"></div>
+    <div id="delete-confirm-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden"></div>
     
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.7";
+        const APP_VERSION = "3.35.9";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -131,44 +138,60 @@
         let isFirebaseInitialized = false;
         
         let questionStats = new Map();
+        let allHistory = [];
         let customProblemSets = [];
         let allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
         let activeQuiz = { sentences: [], type: null, index: 0 };
-        let settings = { maxQuestionsPerSession: 20, questionOrder: 'in-order' };
+        let settings = { maxQuestionsPerSession: 20, questionOrder: 'in-order', autoReadAloud: true };
+        
+        let recognition = null;
+        let isRecognizing = false;
+        let conversationContext = null;
+        let audioCtx;
+        let currentAiResponseAudio;
+        let isStreamingAiResponse = false;
 
         // --- DOM要素 ---
         const dom = {
-            mainContent: document.getElementById('main-content'),
+            screenContainer: document.getElementById('screen-container'),
             screens: {
                 loading: document.getElementById('screen-loading'),
                 auth: document.getElementById('screen-auth'),
                 mainMenu: document.getElementById('screen-main-menu'),
                 quiz: document.getElementById('screen-quiz'),
+                customSets: document.getElementById('screen-custom-sets'),
+                history: document.getElementById('screen-history')
             },
             modals: {
                 apiKey: document.getElementById('api-key-modal'),
+                settings: document.getElementById('settings-modal'),
+                deleteConfirm: document.getElementById('delete-confirm-modal'),
             },
             version: document.getElementById('version-display'),
-            authVersion: document.getElementById('auth-version-display'),
             authContainer: document.getElementById('auth-container'),
-            signinBtn: document.getElementById('signin-btn'),
-            authError: document.getElementById('auth-error'),
         };
         
         // --- 初期化 ---
         document.addEventListener('DOMContentLoaded', () => {
             console.log(`Initializing app v${APP_VERSION}...`);
             dom.version.textContent = `v${APP_VERSION}`;
-            dom.authVersion.textContent = `v${APP_VERSION}`;
 
+            renderModalTemplates();
             initFirebase();
+            loadSettings();
             loadApiKey();
             initEventListeners();
+            initializeSpeechRecognition();
+            initializeAudio();
             
             if (!isFirebaseInitialized) {
+                renderAuthScreen();
                 showScreen('auth');
-                dom.signinBtn.disabled = true;
-                dom.signinBtn.textContent = 'バックエンド接続エラー';
+                const signinBtn = document.getElementById('signin-btn');
+                if(signinBtn) {
+                    signinBtn.disabled = true;
+                    signinBtn.textContent = 'バックエンド接続エラー';
+                }
             } else {
                 setupAuthObserver();
                 showScreen('loading');
@@ -206,7 +229,8 @@
             
             getRedirectResult(auth).catch(error => {
                 console.error("Error handling redirect result:", error);
-                dom.authError.textContent = `リダイレクトエラー: ${error.message}`;
+                const authErrorEl = document.getElementById('auth-error');
+                if(authErrorEl) authErrorEl.textContent = `リダイレクトエラー: ${error.message}`;
             });
 
             onAuthStateChanged(auth, user => {
@@ -224,6 +248,7 @@
         async function onLogin() {
             if (!apiKey) {
                 showModal('apiKey');
+                renderAuthScreen();
                 showScreen('auth');
                 return;
             }
@@ -240,14 +265,18 @@
             questionStats.clear();
             customProblemSets = [];
             updateHeader();
+            renderAuthScreen();
             showScreen('auth');
         }
 
         // --- データ管理 (Firestore) ---
         async function loadAllUserData() {
-            if (!currentUser) return;
+            if (!currentUser) return Promise.resolve();
             const statsPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
                 questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
+                resolve();
+            }, error => {
+                console.error("Error fetching question stats:", error);
                 resolve();
             }));
 
@@ -258,9 +287,20 @@
                     if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
                 });
                 resolve();
+            }, error => {
+                console.error("Error fetching custom sets:", error);
+                resolve();
             }));
             
-            await Promise.all([statsPromise, setsPromise]);
+            const historyPromise = new Promise(resolve => onSnapshot(collection(db, `users/${currentUser.uid}/history`), snapshot => {
+                allHistory = snapshot.docs.map(d => ({ ...d.data(), id: d.id}));
+                resolve();
+            }, error => {
+                console.error("Error fetching history:", error);
+                resolve();
+            }));
+
+            return Promise.all([statsPromise, setsPromise, historyPromise]);
         }
         
         async function updateQuestionSRS(question, isCorrect) {
@@ -294,15 +334,88 @@
             await setDoc(docRef, stat, { merge: true });
         }
 
+        async function handleProblemSetUpload() {
+            const titleInput = document.getElementById('set-title-input');
+            const fileInput = document.getElementById('csv-upload');
+            const statusEl = document.getElementById('upload-status');
+            const uploadBtn = document.getElementById('upload-set-btn');
 
+            const title = titleInput.value.trim();
+            const file = fileInput.files[0];
+            if (!title || !file) return;
+
+            uploadBtn.disabled = true;
+            statusEl.textContent = 'アップロード中...';
+
+            try {
+                const content = await file.text();
+                const sentences = content.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map((line, i) => {
+                    const parts = line.split(',');
+                    if (parts.length < 2) throw new Error(`行 ${i + 1} の形式が不正です。`);
+                    const ja = parts[0].trim();
+                    const en = parts.slice(1).join(',').trim();
+                    if (!ja || !en) throw new Error(`行 ${i + 1} に空の項目があります。`);
+                    return { ja, en };
+                });
+
+                if (sentences.length === 0) throw new Error("有効な問題がありません。");
+
+                await addDoc(collection(db, `users/${currentUser.uid}/problemSets`), {
+                    title,
+                    sentences,
+                    sentenceCount: sentences.length,
+                    createdAt: serverTimestamp()
+                });
+
+                statusEl.textContent = 'アップロードに成功しました！';
+                titleInput.value = '';
+                fileInput.value = '';
+            } catch (error) {
+                console.error("Upload error:", error);
+                statusEl.textContent = `エラー: ${error.message}`;
+            } finally {
+                 setTimeout(() => {
+                    statusEl.textContent = '';
+                    uploadBtn.disabled = false;
+                 }, 3000);
+            }
+        }
+        
+        async function handleDeleteSet(setId, setTitle) {
+             showModal('deleteConfirm', {
+                message: `問題集「${setTitle}」を本当に削除しますか？この操作は取り消せません。`,
+                onConfirm: async () => {
+                    try {
+                        await deleteDoc(doc(db, `users/${currentUser.uid}/problemSets`, setId));
+                    } catch (error) {
+                        console.error("Delete error:", error);
+                        alert("削除中にエラーが発生しました。");
+                    }
+                    hideModal('deleteConfirm');
+                }
+            });
+        }
+        
         // --- UIレンダリング ---
         function showScreen(screenId) {
             Object.values(dom.screens).forEach(screen => screen.classList.add('hidden'));
-            if(dom.screens[screenId]) dom.screens[screenId].classList.remove('hidden');
+            if(dom.screens[screenId]) {
+                 dom.screens[screenId].classList.remove('hidden');
+            }
         }
 
-        function showModal(modalId) {
-            if (dom.modals[modalId]) dom.modals[modalId].classList.remove('hidden');
+        function showModal(modalId, options = {}) {
+            if (dom.modals[modalId]) {
+                 if(modalId === 'deleteConfirm') {
+                    document.getElementById('delete-confirm-message').textContent = options.message;
+                    const confirmBtn = document.getElementById('delete-confirm-btn');
+                    const newConfirmBtn = confirmBtn.cloneNode(true); // Re-clone to remove old listeners
+                    newConfirmBtn.textContent = "削除"
+                    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+                    newConfirmBtn.addEventListener('click', options.onConfirm);
+                }
+                dom.modals[modalId].classList.remove('hidden');
+            }
         }
 
         function hideModal(modalId) {
@@ -312,6 +425,12 @@
         function updateHeader() {
             if (currentUser) {
                 dom.authContainer.innerHTML = `
+                     <div class="has-tooltip relative">
+                        <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                         <div class="tooltip -left-8 mt-2 w-auto p-2 bg-gray-700 text-white text-xs rounded-md shadow-lg">設定</div>
+                    </div>
                     <div class="has-tooltip relative">
                         <img src="${currentUser.photoURL || 'https://placehold.co/40x40/E2E8F0/4A5568?text=User'}" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer">
                         <div class="tooltip -left-8 mt-2 w-auto p-2 bg-gray-700 text-white text-xs rounded-md shadow-lg">
@@ -323,11 +442,26 @@
                     </button>
                 `;
                 document.getElementById('signout-btn').onclick = handleSignOut;
+                document.getElementById('settings-btn').onclick = () => showModal('settings');
             } else {
                 dom.authContainer.innerHTML = '';
             }
         }
         
+        function renderAuthScreen() {
+             dom.screens.auth.innerHTML = `<div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md p-8">
+                    <h2 class="text-2xl font-bold mb-2">AI英作文練習</h2>
+                    <p id="auth-version-display" class="text-xs text-gray-500 mb-4">v${APP_VERSION}</p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">学習データを安全に保存・同期するために、Googleアカウントでサインインしてください。</p>
+                    <button id="signin-btn" class="btn btn-primary w-full flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
+                        Googleでサインイン
+                    </button>
+                    <p id="auth-error" class="text-red-500 mt-4 h-5"></p>
+                </div>`;
+            document.getElementById('signin-btn').addEventListener('click', handleSignIn);
+        }
+
         function renderMainMenu() {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -337,8 +471,16 @@
                     dueCount++;
                 }
             });
+            const learnedTotal = questionStats.size;
+            const masteredCount = Array.from(questionStats.values()).filter(s => s.level >= MASTERED_LEVEL).length;
 
             dom.screens.mainMenu.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+                    <div><p class="text-2xl font-bold text-blue-600">${learnedTotal - masteredCount}</p><p class="text-sm text-gray-500">学習中</p></div>
+                    <div><p class="text-2xl font-bold text-green-600">${masteredCount}</p><p class="text-sm text-gray-500">習得済み</p></div>
+                    <div><p class="text-2xl font-bold text-yellow-600">${dueCount}</p><p class="text-sm text-gray-500">今日復習</p></div>
+                    <div><p class="text-2xl font-bold text-gray-600">${allKnownSentences.size}</p><p class="text-sm text-gray-500">全問題数</p></div>
+                </div>
                 <h2 class="text-2xl font-bold text-center mb-6">学習メニュー</h2>
                 <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     <div class="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col">
@@ -357,53 +499,194 @@
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 flex-grow">自分で作成した問題集で集中的に学習します。</p>
                         <button id="manage-custom-btn" class="btn btn-secondary mt-auto">問題集を管理</button>
                     </div>
-                </div>`;
+                </div>
+                 <div class="text-center mt-8">
+                     <button id="view-history-btn" class="text-blue-600 hover:underline">全回答履歴を見る</button>
+                 </div>
+            `;
             document.getElementById('start-review-btn')?.addEventListener('click', startReviewQuiz);
             document.getElementById('start-new-btn')?.addEventListener('click', startNewQuiz);
+            document.getElementById('manage-custom-btn').addEventListener('click', () => {
+                renderCustomSetsScreen();
+                showScreen('customSets');
+            });
+            document.getElementById('view-history-btn').addEventListener('click', () => {
+                renderHistoryScreen();
+                showScreen('history');
+            });
         }
         
         function renderQuizScreen(isSubmitting = false) {
             const q = activeQuiz.sentences[activeQuiz.index];
             const userAnswer = isSubmitting ? document.getElementById('user-answer').value : '';
             dom.screens.quiz.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 max-w-2xl mx-auto">
+                     <div id="loading-screen-quiz" class="absolute inset-0 bg-white/70 flex-col items-center justify-center rounded-xl ${isSubmitting ? 'flex' : 'hidden'}">
+                        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-16 w-16"></div>
+                        <p class="mt-4 text-gray-600">AIが採点中です...</p>
+                        <p class="mt-2 text-sm text-gray-500 p-2 bg-blue-50 rounded">${englishTips[Math.floor(Math.random() * englishTips.length)]}</p>
+                    </div>
+
                     <div class="flex justify-between items-center mb-4">
                         <p class="text-sm text-gray-500">${activeQuiz.index + 1} / ${activeQuiz.sentences.length}</p>
-                        <button id="quiz-exit-btn" class="text-sm text-gray-500 hover:text-red-500" ${isSubmitting ? 'disabled' : ''}>終了</button>
+                        <button id="quiz-exit-btn" class="text-sm text-gray-500 hover:text-red-500">終了</button>
                     </div>
                     <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg mb-4">
                         <p class="text-sm text-gray-600 dark:text-gray-400">日本語:</p>
                         <p class="text-lg font-semibold">${q.ja}</p>
                     </div>
-                    <textarea id="user-answer" class="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-900" rows="4" placeholder="英語で回答を入力..." ${isSubmitting ? 'disabled' : ''}>${userAnswer}</textarea>
-                    <button id="submit-answer-btn" class="btn btn-primary w-full mt-4" ${isSubmitting ? 'disabled' : ''}>
-                        ${isSubmitting ? '<div class="loader w-5 h-5 mx-auto"></div>' : '採点する'}
-                    </button>
+                    <div class="relative">
+                        <textarea id="user-answer" class="w-full p-3 pr-12 border rounded-lg bg-gray-50 dark:bg-gray-900" rows="4" placeholder="英語で回答を入力...">${userAnswer}</textarea>
+                        <button id="mic-btn" class="absolute top-3 right-3 p-2 text-gray-500 hover:text-blue-600">
+                           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    </div>
+                     <p id="mic-status" class="text-xs h-4 mt-1 text-center"></p>
+                    <button id="submit-answer-btn" class="btn btn-primary w-full mt-4">採点する</button>
                     <div id="quiz-result-area" class="mt-4"></div>
                 </div>
             `;
-            if (!isSubmitting) {
-                document.getElementById('submit-answer-btn').addEventListener('click', handleSubmit);
-                document.getElementById('quiz-exit-btn').addEventListener('click', () => {
-                    renderMainMenu();
-                    showScreen('mainMenu');
-                });
-            }
+            document.getElementById('submit-answer-btn').addEventListener('click', handleSubmit);
+            document.getElementById('mic-btn').addEventListener('click', () => startNewRecognition('english-input'));
+            document.getElementById('quiz-exit-btn').addEventListener('click', () => {
+                renderMainMenu();
+                showScreen('mainMenu');
+            });
         }
 
         function renderQuizResult(result) {
             const resultArea = document.getElementById('quiz-result-area');
+            const question = activeQuiz.sentences[activeQuiz.index];
+            const userAnswer = document.getElementById('user-answer').value;
+
             const resultColor = result.isCorrect ? 'green' : 'red';
             resultArea.innerHTML = `
                 <div class="border-l-4 border-${resultColor}-500 bg-${resultColor}-50 dark:bg-opacity-10 p-4 mt-4 rounded">
                     <h4 class="font-bold text-${resultColor}-700 dark:text-${resultColor}-400">${result.isCorrect ? '正解！' : 'もう一歩！'}</h4>
                     <p class="text-gray-700 dark:text-gray-300 mt-2">${result.feedback}</p>
                 </div>
+                <div id="conversation-area" class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-bold text-md mb-2 text-center">AIに音声で質問する</h4>
+                    <div id="conversation-log" class="space-y-3 mb-4 p-2 bg-white rounded-lg max-h-48 overflow-y-auto border"></div>
+                    <div class="flex flex-col items-center">
+                        <button id="ask-ai-voice-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 flex items-center justify-center disabled:bg-gray-400 relative">
+                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4z"></path><path d="M3.204 7.636A6.974 6.974 0 002 11h2a5 5 0 015-5v2.586l-2.707-2.707A6.969 6.969 0 003.204 7.636zM14.796 14.364A6.969 6.969 0 0017.5 11h-2a5 5 0 01-5 5v-2.586l2.707 2.707z"></path></svg>
+                             音声で質問
+                        </button>
+                        <p id="ai-conversation-status" class="text-sm text-gray-500 mt-2 h-4"></p>
+                    </div>
+                </div>
                 <div class="mt-4 text-center">
                     <button id="next-question-btn" class="btn btn-primary">次の問題へ</button>
                 </div>
             `;
+            
+            conversationContext = {
+                history: [
+                    { role: 'user', parts: [{ text: `これから英語の添削に関する質問をします。前提情報は以下の通りです。\n日本語原文:「${question.ja}」\n模範解答:「${question.en}」\n私の解答:「${userAnswer}」\nあなたの初期評価:「${result.feedback}」` }] },
+                    { role: 'model', parts: [{ text: "はい、承知いたしました。どのようなご質問でしょうか？" }] }
+                ]
+            };
+            
             document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+            document.getElementById('ask-ai-voice-btn').addEventListener('click', () => startNewRecognition('conversation'));
+        }
+
+        function renderCustomSetsScreen(detailSetId = null) {
+            if (detailSetId) {
+                const set = customProblemSets.find(p => p.id === detailSetId);
+                if (!set) {
+                    renderCustomSetsScreen(); // Set not found, go back to list
+                    return;
+                }
+                dom.screens.customSets.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold truncate">${set.title}</h2>
+                        <button id="back-to-sets-list" class="text-sm text-blue-600 hover:underline">← 問題集一覧に戻る</button>
+                    </div>
+                    <button id="start-custom-quiz-btn" class="btn btn-success w-full mb-4">この問題集で学習を始める</button>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow"><table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50"><tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日本語</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">英語</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">正答率</th>
+                        </tr></thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${(set.sentences || []).map(s => {
+                                const stat = questionStats.get(s.ja);
+                                const acc = (stat && stat.attemptCount > 0) ? `${Math.round((stat.correctCount / stat.attemptCount) * 100)}%` : '未';
+                                return `<tr><td class="px-6 py-4">${s.ja}</td><td class="px-6 py-4">${s.en}</td><td class="px-6 py-4">${acc}</td></tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table></div>`;
+                document.getElementById('back-to-sets-list').onclick = () => renderCustomSetsScreen();
+                document.getElementById('start-custom-quiz-btn').onclick = () => startCustomQuiz(set.sentences);
+            } else {
+                 dom.screens.customSets.innerHTML = `
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">カスタム問題集の管理</h2>
+                        <button id="back-to-main-menu" class="text-sm text-blue-600 hover:underline">← メインメニューに戻る</button>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border mb-8">
+                        <h3 class="text-lg font-semibold mb-4">新しい問題集をアップロード</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="set-title-input" class="block text-sm font-medium">問題集のタイトル</label>
+                                <input type="text" id="set-title-input" class="mt-1 w-full p-2 border rounded-lg" placeholder="例：ビジネス英会話 Chapter 1">
+                            </div>
+                            <div>
+                                <label for="csv-upload" class="block text-sm font-medium">CSVファイル (日本語,英語)</label>
+                                <input type="file" id="csv-upload" class="mt-1 w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".csv">
+                            </div>
+                            <button id="upload-set-btn" class="btn btn-primary w-full">アップロードして保存</button>
+                            <p id="upload-status" class="text-center text-sm h-4"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">保存済みの問題集</h3>
+                        <div id="custom-set-list" class="space-y-3">
+                            ${customProblemSets.length === 0 ? '<p class="text-gray-500">問題集がありません。</p>' : customProblemSets.map(set => `
+                                <div class="bg-white dark:bg-gray-800 border rounded-lg p-4 flex justify-between items-center">
+                                    <div>
+                                        <p class="font-semibold">${set.title}</p>
+                                        <p class="text-sm text-gray-500">${set.sentenceCount || 0}問</p>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="view-set-detail btn btn-secondary text-sm" data-set-id="${set.id}">詳細</button>
+                                        <button class="delete-set-btn btn btn-danger text-sm" data-set-id="${set.id}" data-set-title="${set.title}">削除</button>
+                                    </div>
+                                </div>`).join('')
+                            }
+                        </div>
+                    </div>`;
+                document.getElementById('back-to-main-menu').onclick = () => { renderMainMenu(); showScreen('mainMenu'); };
+                document.getElementById('upload-set-btn').onclick = handleProblemSetUpload;
+                document.querySelectorAll('.view-set-detail').forEach(b => b.onclick = (e) => renderCustomSetsScreen(e.target.dataset.setId));
+                document.querySelectorAll('.delete-set-btn').forEach(b => b.onclick = (e) => handleDeleteSet(e.target.dataset.setId, e.target.dataset.setTitle));
+            }
+        }
+        
+        function renderHistoryScreen() {
+             dom.screens.history.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">全回答履歴</h2>
+                    <button id="back-to-main-menu-from-history" class="text-sm text-blue-600 hover:underline">← メインメニューに戻る</button>
+                </div>
+                 <ul id="history-list" class="space-y-4">
+                    ${allHistory.length === 0 ? '<li class="text-center text-gray-500">まだ学習履歴がありません。</li>' :
+                    [...allHistory].sort((a,b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0)).map(item => `
+                         <li class="p-4 border rounded-lg ${item.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
+                            <p class="text-sm text-gray-500 mb-1">${item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleString('ja-JP') : ''}</p>
+                            <p class="font-semibold mb-2">${item.japanese}</p>
+                            <p>あなたの回答: <span class="font-normal text-gray-700">${item.userAnswer}</span></p>
+                            <div class="p-2 mt-2 rounded ${item.isCorrect ? 'bg-green-100' : 'bg-red-100'}">
+                                <p class="text-sm font-medium">${item.isCorrect ? '✓ 正解' : '✗ 不正解'}: ${item.feedback}</p>
+                            </div>
+                        </li>
+                    `).join('')
+                    }
+                 </ul>`;
+            document.getElementById('back-to-main-menu-from-history').onclick = () => { renderMainMenu(); showScreen('mainMenu'); };
         }
         
         // --- クイズロジック ---
@@ -437,6 +720,13 @@
             showScreen('quiz');
         }
 
+        function startCustomQuiz(sentences) {
+            const quizSentences = settings.questionOrder === 'random' ? [...sentences].sort(() => 0.5 - Math.random()) : sentences;
+            activeQuiz = { sentences: quizSentences.slice(0, settings.maxQuestionsPerSession), type: 'custom', index: 0 };
+            renderQuizScreen();
+            showScreen('quiz');
+        }
+
         async function handleSubmit() {
             const userAnswer = document.getElementById('user-answer').value.trim();
             if (!userAnswer) return;
@@ -447,6 +737,14 @@
             const result = await getAIEvaluation(question.ja, question.en, userAnswer);
             
             await updateQuestionSRS(question, result.isCorrect);
+            await addDoc(collection(db, `users/${currentUser.uid}/history`), {
+                japanese: question.ja,
+                userAnswer,
+                isCorrect: result.isCorrect,
+                feedback: result.feedback,
+                timestamp: serverTimestamp()
+            });
+
             renderQuizResult(result);
         }
 
@@ -480,14 +778,142 @@
                 return { isCorrect: false, feedback: `AIによる採点ができませんでした。エラー: ${error.message}` };
             }
         }
+        
+        // --- 音声関連 ---
+        function initializeAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) {
+                console.warn("Web Audio API is not supported in this browser.");
+            }
+        }
+        
+        function initializeSpeechRecognition() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!('SpeechRecognition' in window)) {
+                console.warn("Speech Recognition not supported.");
+            }
+        }
 
+        function startNewRecognition(type) {
+             if (!('SpeechRecognition' in window) || isRecognizing) return;
+             
+             recognition = new SpeechRecognition();
+             recognition.continuous = false;
+             recognition.interimResults = true;
+             
+             const targetLang = type === 'english-input' ? 'en-US' : 'ja-JP';
+             recognition.lang = targetLang;
+             
+             const micBtn = type === 'english-input' ? document.getElementById('mic-btn') : document.getElementById('ask-ai-voice-btn');
+             const statusEl = type === 'english-input' ? document.getElementById('mic-status') : document.getElementById('ai-conversation-status');
+             
+             recognition.onstart = () => {
+                 isRecognizing = true;
+                 micBtn?.classList.add('text-red-500', 'mic-recording');
+                 if(statusEl) statusEl.textContent = '聞いています...';
+             };
+             
+             recognition.onend = () => {
+                 isRecognizing = false;
+                 micBtn?.classList.remove('text-red-500', 'mic-recording');
+                 if(statusEl && statusEl.textContent === '聞いています...') statusEl.textContent = '';
+             };
+             
+             recognition.onerror = (event) => {
+                 console.error('Speech Recognition Error:', event.error);
+                 if(statusEl) statusEl.textContent = `エラー: ${event.error}`;
+             };
+             
+             recognition.onresult = async (event) => {
+                 let final_transcript = '';
+                 for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        final_transcript += event.results[i][0].transcript;
+                    }
+                 }
+
+                 if (type === 'english-input') {
+                    const inputEl = document.getElementById('user-answer');
+                    if(inputEl) inputEl.value = final_transcript;
+                 } else if (type === 'conversation' && final_transcript.trim()) {
+                    await handleVoiceQuestion(final_transcript.trim());
+                 }
+             };
+             
+             recognition.start();
+        }
+
+        async function handleVoiceQuestion(transcript) {
+            const logEl = document.getElementById('conversation-log');
+            const statusEl = document.getElementById('ai-conversation-status');
+            const askBtn = document.getElementById('ask-ai-voice-btn');
+            
+            if (!logEl || !statusEl || !askBtn) return;
+            
+            askBtn.disabled = true;
+            logEl.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-500 text-white rounded-lg px-3 py-2 text-sm">${transcript}</span></div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            statusEl.textContent = "AIが考えています...";
+
+            conversationContext.history.push({ role: 'user', parts: [{ text: transcript }]});
+            
+            // This is a placeholder for the actual streaming logic
+            // In a real app, you would use streamGenerateContent
+            const aiResponseText = "これはAIからの応答のサンプルです。";
+            conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
+            
+            logEl.innerHTML += `<div class="text-left"><span class="inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm">${aiResponseText}</span></div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+
+            speakText(aiResponseText, 'ja-JP', () => {
+                statusEl.textContent = '';
+                askBtn.disabled = false;
+            });
+        }
+        
+        function speakText(text, lang = 'ja-JP', onEndCallback = () => {}) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.onend = onEndCallback;
+                utterance.onerror = (e) => {
+                    console.error("SpeechSynthesis Error:", e);
+                    onEndCallback();
+                };
+                window.speechSynthesis.speak(utterance);
+            } else {
+                onEndCallback();
+            }
+        }
 
         // --- イベントリスナー ---
         function initEventListeners() {
-            dom.signinBtn.addEventListener('click', handleSignIn);
-            document.getElementById('save-api-key-btn').addEventListener('click', saveApiKey);
+            document.getElementById('home-button').addEventListener('click', () => {
+                if(currentUser) {
+                    renderMainMenu();
+                    showScreen('mainMenu');
+                }
+            });
+            dom.modals.apiKey.addEventListener('click', (e) => {
+                if(e.target.id === 'save-api-key-btn') saveApiKey();
+            });
+             dom.modals.settings.addEventListener('click', (e) => {
+                if(e.target.id === 'close-settings-btn') hideModal('settings');
+                if(e.target.id === 'reset-api-key-btn') {
+                    hideModal('settings');
+                    showModal('apiKey');
+                }
+                if(e.target.id === 'max-questions-input' || e.target.id === 'question-order-select' || e.target.id === 'auto-read-aloud-toggle') {
+                    saveSettings();
+                }
+            });
+             dom.modals.deleteConfirm.addEventListener('click', (e) => {
+                if(e.target.id === 'delete-cancel-btn') hideModal('deleteConfirm');
+            });
         }
-
+        
         // --- 認証ハンドラ ---
         function isMobile() { return /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent); }
         function handleSignIn() {
@@ -495,14 +921,15 @@
             const method = isMobile() ? signInWithRedirect : signInWithPopup;
             method(auth, provider).catch(err => {
                 console.error("Signin failed", err);
-                dom.authError.textContent = `エラー: ${err.message}`;
+                const authErrorEl = document.getElementById('auth-error');
+                if(authErrorEl) authErrorEl.textContent = `エラー: ${err.message}`;
             });
         }
         function handleSignOut() {
             signOut(auth).catch(err => console.error("Signout failed", err));
         }
 
-        // --- APIキー管理 ---
+        // --- APIキー & 設定管理 ---
         function loadApiKey() { apiKey = localStorage.getItem('geminiApiKey'); }
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value;
@@ -511,10 +938,78 @@
                 localStorage.setItem('geminiApiKey', key);
                 hideModal('apiKey');
                 if (currentUser) onLogin();
-                else if(isFirebaseInitialized) showScreen('auth');
+                else if(isFirebaseInitialized) renderAuthScreen();
             } else {
                 alert('APIキーを入力してください。');
             }
+        }
+        function loadSettings() {
+            const saved = localStorage.getItem('englishAppSettings');
+            if (saved) {
+                settings = JSON.parse(saved);
+            }
+        }
+        function saveSettings() {
+            settings.maxQuestionsPerSession = document.getElementById('max-questions-input').value;
+            settings.questionOrder = document.getElementById('question-order-select').value;
+            settings.autoReadAloud = document.getElementById('auto-read-aloud-toggle').checked;
+            localStorage.setItem('englishAppSettings', JSON.stringify(settings));
+        }
+
+        // --- Modal Templates ---
+        function renderModalTemplates() {
+             dom.modals.apiKey.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-lg w-full">
+                    <h2 class="text-2xl font-bold mb-4">APIキーが必要です</h2>
+                    <p class="mb-4 text-gray-600 dark:text-gray-400">AI機能を利用するには、Google AI Studioで取得したAPIキーが必要です。キーはあなたのブラウザに安全に保存されます。</p>
+                    <input type="password" id="api-key-input" class="w-full p-2 border rounded-lg mb-4 bg-gray-50 dark:bg-gray-700" placeholder="ここにAPIキーを貼り付け">
+                    <div class="flex justify-end space-x-4">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">キーを取得</a>
+                        <button id="save-api-key-btn" class="btn btn-primary">保存</button>
+                    </div>
+                </div>`;
+
+             dom.modals.settings.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-lg w-full">
+                    <h2 class="text-2xl font-bold mb-4">設定</h2>
+                     <div class="space-y-4">
+                        <div>
+                            <label for="max-questions-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">1セッションの最大問題数</label>
+                            <input type="number" id="max-questions-input" class="w-full p-2 mt-1 border rounded-lg" value="${settings.maxQuestionsPerSession}">
+                        </div>
+                        <div>
+                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">カスタム問題の出題順</label>
+                             <select id="question-order-select" class="w-full p-2 mt-1 border rounded-lg">
+                                <option value="in-order" ${settings.questionOrder === 'in-order' ? 'selected' : ''}>ファイル順</option>
+                                <option value="random" ${settings.questionOrder === 'random' ? 'selected' : ''}>ランダム</option>
+                             </select>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="auto-read-aloud-toggle" class="h-4 w-4 rounded" ${settings.autoReadAloud ? 'checked' : ''}>
+                            <label for="auto-read-aloud-toggle" class="ml-2 block text-sm text-gray-900 dark:text-gray-200">問題の自動読み上げ</label>
+                        </div>
+                        <hr class="dark:border-gray-600">
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">APIキーの再設定</label>
+                            <button id="reset-api-key-btn" class="btn btn-secondary mt-1">APIキーを再設定</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button id="close-settings-btn" class="btn btn-danger">閉じる</button>
+                    </div>
+                </div>
+             `;
+             
+             dom.modals.deleteConfirm.innerHTML = `
+                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+                    <h3 class="text-xl font-bold mb-4">本当に削除しますか？</h3>
+                    <p id="delete-confirm-message" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+                    <div class="flex justify-center space-x-4">
+                         <button id="delete-cancel-btn" class="btn btn-secondary">キャンセル</button>
+                         <button id="delete-confirm-btn" class="btn btn-danger">削除</button>
+                    </div>
+                 </div>
+             `;
         }
     </script>
 </body>
