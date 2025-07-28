@@ -79,7 +79,7 @@
                 <div id="screen-loading" class="flex items-center justify-center h-full">
                     <div class="text-center">
                         <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div>
-                        <p class="mt-4 text-gray-500">アプリを起動しています...</p>
+                        <p id="loading-message" class="mt-4 text-gray-500">アプリを起動しています...</p>
                     </div>
                 </div>
                 
@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.15";
+        const APP_VERSION = "3.35.16";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -159,7 +159,7 @@
 
         // --- DOM要素 ---
         const dom = {
-            screenContainer: document.getElementById('screen-container'),
+            loadingMessage: document.getElementById('loading-message'),
             screens: {
                 loading: document.getElementById('screen-loading'),
                 auth: document.getElementById('screen-auth'),
@@ -179,9 +179,10 @@
         
         // --- 初期化 ---
         document.addEventListener('DOMContentLoaded', () => {
-            log("DOM content loaded. Initializing...");
+            log("DOM content loaded. Starting application initialization.");
             dom.version.textContent = `v${APP_VERSION}`;
-
+            
+            showLoading("初期化中...");
             renderModalTemplates();
             initFirebase();
             loadSettings();
@@ -189,24 +190,26 @@
             initEventListeners();
             initializeSpeechRecognition();
             initializeAudio();
-            
-            showScreen('loading');
 
+            startApp();
+        });
+        
+        function startApp() {
             if (!isFirebaseInitialized) {
-                error("Firebase initialization failed.");
-                renderAuthScreen();
-                showScreen('auth');
+                error("Firebase initialization failed. App cannot start.");
+                showErrorScreen("Firebaseの初期化に失敗しました。");
                 return;
             }
             
+            showLoading("認証情報を確認中...");
             getRedirectResult(auth)
                 .catch((e) => {
-                    error("Error processing redirect result:", e);
+                    error("Error processing redirect result on startup:", e);
                 })
                 .finally(() => {
                     setupAuthObserver();
                 });
-        });
+        }
 
 
         function initFirebase() {
@@ -237,31 +240,29 @@
                 log("Auth state changed. User:", user ? user.uid : 'null');
                 if (user) {
                     if (currentUser && currentUser.uid === user.uid) {
-                        log("Auth state for current user confirmed. No UI change needed.");
                         return;
                     }
                     currentUser = user;
-                    await onLogin();
+                    await handleLogin();
                 } else {
                     if (currentUser === null) {
-                        log("User is already logged out. No UI change needed.");
                         return;
                     }
                     currentUser = null;
-                    onLogout();
+                    handleLogout();
                 }
             });
         }
         
         // --- 認証フロー ---
-        async function onLogin() {
+        async function handleLogin() {
             try {
                 log(`User ${currentUser.uid} logged in. Starting login process...`);
-                showScreen('loading');
+                showLoading("ユーザーデータを読み込み中...");
                 updateHeader();
 
                 if (!apiKey) {
-                    log("API key not found, showing modal and auth screen.");
+                    log("API key not found. Displaying auth screen and API key modal.");
                     renderAuthScreen();
                     showScreen('auth');
                     showModal('apiKey');
@@ -274,12 +275,11 @@
                 log("Login process complete, main menu displayed.");
             } catch (e) {
                 error("Error during login process:", e);
-                renderAuthScreen();
-                showScreen('auth'); 
+                showErrorScreen("ログイン処理中にエラーが発生しました。", e.message);
             }
         }
 
-        function onLogout() {
+        function handleLogout() {
             log("Starting logout process...");
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
@@ -300,43 +300,32 @@
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
             
-            return new Promise((resolve, reject) => {
+            try {
                 const statsQuery = query(collection(db, `users/${currentUser.uid}/questionStats`));
                 const setsQuery = query(collection(db, `users/${currentUser.uid}/problemSets`));
                 const historyQuery = query(collection(db, `users/${currentUser.uid}/history`));
 
-                let statsLoaded = false, setsLoaded = false, historyLoaded = false;
-                
-                const checkAllLoaded = () => {
-                    if(statsLoaded && setsLoaded && historyLoaded) {
-                        log("Initial data fetch complete.");
-                        attachRealtimeListeners();
-                        resolve();
-                    }
-                };
-                
-                getDocs(statsQuery).then(snapshot => {
-                    questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
-                    statsLoaded = true;
-                    checkAllLoaded();
-                }).catch(reject);
+                const [statsSnapshot, setsSnapshot, historySnapshot] = await Promise.all([
+                    getDocs(statsQuery),
+                    getDocs(setsQuery),
+                    getDocs(historyQuery)
+                ]);
 
-                getDocs(setsQuery).then(snapshot => {
-                    customProblemSets = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-                    allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
-                    customProblemSets.forEach(set => {
-                        if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
-                    });
-                    setsLoaded = true;
-                    checkAllLoaded();
-                }).catch(reject);
+                questionStats = new Map(statsSnapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
+                customProblemSets = setsSnapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                allHistory = historySnapshot.docs.map(d => ({ ...d.data(), id: d.id}));
 
-                getDocs(historyQuery).then(snapshot => {
-                    allHistory = snapshot.docs.map(d => ({ ...d.data(), id: d.id}));
-                    historyLoaded = true;
-                    checkAllLoaded();
-                }).catch(reject);
-            });
+                allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+                customProblemSets.forEach(set => {
+                    if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
+                });
+
+                log("Initial data fetch complete.");
+                attachRealtimeListeners();
+            } catch(e) {
+                error("Failed to fetch initial user data:", e);
+                throw e; // Propagate error to handleLogin
+            }
         }
         
         function attachRealtimeListeners() {
@@ -464,6 +453,22 @@
             if(dom.screens[screenId]) {
                  dom.screens[screenId].classList.remove('hidden');
             }
+        }
+        
+        function showLoading(message) {
+            dom.loadingMessage.textContent = message;
+            showScreen('loading');
+        }
+
+        function showErrorScreen(message, details = '') {
+            renderAuthScreen(); // Show a basic auth screen structure
+            const authErrorEl = document.getElementById('auth-error');
+            if (authErrorEl) {
+                authErrorEl.innerHTML = `${message}<br><small class="text-gray-400">${details}</small>`;
+            }
+            const signinBtn = document.getElementById('signin-btn');
+            if(signinBtn) signinBtn.disabled = true;
+            showScreen('auth');
         }
 
         function showModal(modalId, options = {}) {
@@ -1175,9 +1180,9 @@
                 hideModal('apiKey');
                 log("API Key saved.");
                 if (auth.currentUser) {
-                     onLogin();
+                     handleLogin();
                 } else {
-                     onLogout();
+                     handleLogout();
                 }
             } else {
                 alert('APIキーを入力してください。');
@@ -1253,4 +1258,4 @@
         }
     </script>
 </body>
-</ht
+</ht" of the code in your answ
