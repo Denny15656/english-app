@@ -661,8 +661,8 @@
             
             conversationContext = {
                 history: [
-                    { role: 'user', parts: [{ text: `これから英語の添削に関する質問をします。前提情報は以下の通りです。\n日本語原文:「${question.ja}」\n模範解答:「${question.en}」\n私の解答:「${userAnswer}」\nあなたの初期評価:「${result.feedback}」` }] },
-                    { role: 'model', parts: [{ text: "はい、承知いたしました。どのようなご質問でしょうか？" }] }
+                    { role: 'user', parts: [{ text: `英作文の採点結果について質問します。以下がその内容です。\n\n# 日本語の原文\n${question.ja}\n\n# 私の英訳\n${userAnswer}\n\n# あなたからの評価\n${result.feedback}\n\nこの評価について、いくつか質問があります。` }] },
+                    { role: 'model', parts: [{ text: "はい、承知いたしました。どのようなことでもご質問ください。" }] }
                 ]
             };
             
@@ -1004,6 +1004,10 @@
 
                             try {
                                 const chunk = JSON.parse(jsonStr);
+                                if (chunk.error) {
+                                    throw new Error(`API error in stream: ${chunk.error.message}`);
+                                }
+
                                 const textPart = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
                                 if (textPart) {
                                     if (isFirstChunk) {
@@ -1016,13 +1020,14 @@
                                     logElement.scrollTop = logElement.scrollHeight;
                                 }
                             } catch (e) {
-                                error("JSON parsing error in stream. String:", jsonStr, "Error:", e);
+                                if (e.message.startsWith("API error in stream:")) throw e;
+                                error("JSON parsing error on a stream chunk. String:", jsonStr, "Error:", e);
                             }
                         }
                     }
                 }
                 log("Streaming complete.");
-                if (isFirstChunk) { // Stream ended but no text was received
+                if (isFirstChunk) { 
                     aiMessageBubble.textContent = "AIからの応答がありませんでした。";
                     aiMessageBubble.classList.remove('items-center');
                 }
