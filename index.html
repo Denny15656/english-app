@@ -120,7 +120,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.27";
+        const APP_VERSION = "3.35.28";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -659,7 +659,7 @@
                 <div class="mt-4 text-center">
                     <button id="next-question-btn" class="btn btn-primary">次の問題へ</button>
                 </div>
-                <div id="debug-area" class="hidden"></div>
+                <div id="debug-area">${ settings.debugMode ? '<div class="debug-log">Debug output will appear here.</div>' : ''}</div>
             `;
             
             conversationContext = {
@@ -941,7 +941,7 @@
             try {
                 conversationContext.history.push({ role: 'user', parts: [{ text: transcript }]});
                 
-                const aiResponseText = await streamAIConversationResponse(conversationContext.history, logEl);
+                const aiResponseText = await getAIConversationResponse(conversationContext.history, logEl);
                 if (aiResponseText) {
                      conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
                 }
@@ -967,10 +967,10 @@
             }
         }
 
-       async function streamAIConversationResponse(history, logElement) {
+       async function getAIConversationResponse(history, logElement) {
             let fullResponse = "";
             const payload = { contents: history };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             const aiMessageContainer = document.createElement('div');
             aiMessageContainer.className = 'text-left';
@@ -980,9 +980,15 @@
             aiMessageContainer.appendChild(aiMessageBubble);
             logElement.appendChild(aiMessageContainer);
             logElement.scrollTop = logElement.scrollHeight;
+            
+            const debugArea = document.getElementById('debug-area');
+            if (settings.debugMode && debugArea) {
+                debugArea.classList.remove('hidden');
+                debugArea.innerHTML = `<div class="debug-log"><strong>Request to Gemini:</strong><br>${JSON.stringify(payload, null, 2)}</div>`;
+            }
 
             try {
-                log("Streaming AI response from Gemini...");
+                log("Getting AI conversation response from Gemini (non-streaming)...");
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -995,8 +1001,12 @@
                 }
                 
                 const result = await response.json();
+
+                if (settings.debugMode && debugArea) {
+                    debugArea.innerHTML += `<div class="debug-log"><strong>Raw Response from Gemini:</strong><br>${JSON.stringify(result, null, 2)}</div>`;
+                }
                 
-                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
                     fullResponse = result.candidates[0].content.parts[0].text;
                     aiMessageBubble.textContent = fullResponse;
                     aiMessageBubble.classList.remove('items-center');
@@ -1009,11 +1019,14 @@
                 log("Response received successfully.");
 
             } catch (e) {
-                error("Streaming API error:", e);
+                error("API call error:", e);
                 fullResponse = `エラーが発生しました: ${e.message}`;
                 aiMessageBubble.textContent = fullResponse;
                 aiMessageBubble.classList.remove('bg-gray-200', 'text-gray-800', 'items-center');
                 aiMessageBubble.classList.add('bg-red-200', 'text-red-800');
+                 if (settings.debugMode && debugArea) {
+                    debugArea.innerHTML += `<div class="debug-log"><strong>Caught Error:</strong><br>${e.stack}</div>`;
+                }
             }
             return fullResponse;
         }
