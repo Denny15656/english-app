@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.23";
+        const APP_VERSION = "3.35.25";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -997,7 +997,9 @@
                     aiMessageBubble.textContent = fullResponse;
                     aiMessageBubble.classList.remove('items-center');
                 } else {
-                     throw new Error("Invalid response structure from API.");
+                     fullResponse = "AIからの応答がありませんでした。";
+                     aiMessageBubble.textContent = fullResponse;
+                     aiMessageBubble.classList.remove('items-center');
                 }
 
                 log("Response received successfully.");
