@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.12";
+        const APP_VERSION = "3.35.13";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -136,6 +136,7 @@
         let currentUser = null;
         let apiKey = null;
         let isFirebaseInitialized = false;
+        let isAuthCheckComplete = false;
         
         let questionStats = new Map();
         let allHistory = [];
@@ -201,21 +202,25 @@
                     signinBtn.disabled = true;
                     signinBtn.textContent = 'バックエンド接続エラー';
                 }
-            } else {
-                try {
-                    log("Checking for redirect result...");
-                    await getRedirectResult(auth);
-                    log("Redirect result processed.");
-                    setupAuthObserver();
-                } catch (e) {
-                    error("Error processing redirect result:", e);
-                    renderAuthScreen();
-                    showScreen('auth');
-                    const authErrorEl = document.getElementById('auth-error');
-                    if(authErrorEl) authErrorEl.textContent = `認証エラー: ${e.code || e.message}`;
+                return;
+            }
+            
+            try {
+                log("Checking for redirect result...");
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    log("Redirect result successfully processed for user:", result.user.displayName);
                 }
+                setupAuthObserver();
+            } catch (e) {
+                error("Critical error processing redirect result:", e);
+                renderAuthScreen();
+                showScreen('auth');
+                const authErrorEl = document.getElementById('auth-error');
+                if(authErrorEl) authErrorEl.textContent = `認証エラー: ${e.code || e.message}`;
             }
         });
+
 
         function initFirebase() {
             try {
@@ -245,7 +250,7 @@
             onAuthStateChanged(auth, user => {
                 log("Auth state changed. User:", user ? user.uid : null);
                 if (user) {
-                    if (currentUser?.uid === user.uid) {
+                    if (currentUser?.uid === user.uid && isAuthCheckComplete) {
                         log("Auth state change is for the same user, ignoring.");
                         return;
                     }
@@ -254,6 +259,7 @@
                 } else {
                     onLogout();
                 }
+                isAuthCheckComplete = true;
             });
         }
         
@@ -264,8 +270,10 @@
                 if (!apiKey) {
                     log("API key not found, showing modal.");
                     showModal('apiKey');
-                    renderAuthScreen();
-                    showScreen('auth');
+                    if(dom.screens.auth.classList.contains('hidden')){
+                         renderAuthScreen();
+                         showScreen('auth');
+                    }
                     return;
                 }
                 showScreen('loading');
@@ -294,7 +302,7 @@
 
         // --- データ管理 (Firestore) ---
         async function loadAllUserData() {
-            if (!currentUser) return;
+            if (!currentUser) return Promise.resolve();
             log("Loading all user data...");
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
@@ -881,28 +889,33 @@
             logEl.scrollTop = logEl.scrollHeight;
             statusEl.textContent = "AIが考えています...";
 
-            conversationContext.history.push({ role: 'user', parts: [{ text: transcript }]});
-            
-            const aiResponseText = await streamAIConversationResponse(conversationContext.history, logEl, statusEl);
-            if (aiResponseText) {
-                 conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
-            }
-            
-            if(aiResponseText && !aiResponseText.startsWith("エラー")) {
-                statusEl.textContent = '音声を生成中...';
-                try {
-                    const { audioData, mimeType } = await getAIAudioResponse(aiResponseText);
-                    if (audioData) {
-                        await playAIAudio(audioData, mimeType);
-                    } else { throw new Error("TTS API returned no audio data."); }
-                } catch(e) {
-                     error("Gemini TTS failed, falling back to browser speech.", e);
-                     speakText(aiResponseText, 'ja-JP');
+            try {
+                conversationContext.history.push({ role: 'user', parts: [{ text: transcript }]});
+                
+                const aiResponseText = await streamAIConversationResponse(conversationContext.history, logEl);
+                if (aiResponseText) {
+                     conversationContext.history.push({ role: 'model', parts: [{ text: aiResponseText }]});
                 }
+                
+                if(aiResponseText && !aiResponseText.startsWith("エラー")) {
+                    statusEl.textContent = '音声を生成中...';
+                    try {
+                        const { audioData, mimeType } = await getAIAudioResponse(aiResponseText);
+                        if (audioData) {
+                            await playAIAudio(audioData, mimeType);
+                        } else { throw new Error("TTS API returned no audio data."); }
+                    } catch(e) {
+                         error("Gemini TTS failed, falling back to browser speech.", e);
+                         speakText(aiResponseText, 'ja-JP');
+                    }
+                }
+            } catch(e) {
+                 error("An error occurred in handleVoiceQuestion:", e);
+                 statusEl.textContent = "エラーが発生しました。";
+            } finally {
+                statusEl.textContent = '';
+                askBtn.disabled = false;
             }
-
-            statusEl.textContent = '';
-            askBtn.disabled = false;
         }
 
         async function streamAIConversationResponse(history, logElement) {
@@ -1115,15 +1128,23 @@
         }
 
         // --- APIキー & 設定管理 ---
-        function loadApiKey() { apiKey = localStorage.getItem('geminiApiKey'); }
+        function loadApiKey() { 
+            apiKey = localStorage.getItem('geminiApiKey');
+            if(apiKey){ log("API Key loaded from localStorage."); }
+            else { log("API Key not found in localStorage."); }
+        }
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value;
             if (key) {
                 apiKey = key;
                 localStorage.setItem('geminiApiKey', key);
                 hideModal('apiKey');
-                if (currentUser) onLogin();
-                else if(isFirebaseInitialized) renderAuthScreen();
+                log("API Key saved.");
+                if (auth.currentUser) {
+                     onLogin();
+                } else {
+                     onLogout();
+                }
             } else {
                 alert('APIキーを入力してください。');
             }
