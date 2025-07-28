@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.22";
+        const APP_VERSION = "3.35.23";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -963,12 +963,10 @@
             }
         }
 
-        async function streamAIConversationResponse(history, logElement) {
-            let currentAiResponseText = "";
+       async function streamAIConversationResponse(history, logElement) {
+            let fullResponse = "";
             const payload = { contents: history };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); 
 
             const aiMessageContainer = document.createElement('div');
             aiMessageContainer.className = 'text-left';
@@ -981,81 +979,39 @@
 
             try {
                 log("Streaming AI response from Gemini...");
-                const response = await fetch(apiUrl, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
 
-                clearTimeout(timeoutId);
-
                 if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({ error: { message: "Unknown API error" } }));
-                    throw new Error(`API request failed with status ${response.status}: ${errorBody.error?.message || response.statusText}`);
+                     const errorBody = await response.json().catch(() => ({ error: { message: "Unknown API error" } }));
+                    throw new Error(`API request failed: ${response.status} ${errorBody.error?.message || response.statusText}`);
                 }
                 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-                let isFirstChunk = true;
+                const result = await response.json();
                 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) {
-                        log("Stream finished.");
-                        break;
-                    }
-                    
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop(); 
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const jsonStr = line.substring(6).trim();
-                            if (!jsonStr) continue;
-                            try {
-                                const parsed = JSON.parse(jsonStr);
-                                if (parsed.error) throw new Error(`API error in stream: ${parsed.error.message}`);
-                                
-                                const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                                if (textPart) {
-                                    if (isFirstChunk) {
-                                        aiMessageBubble.innerHTML = ''; 
-                                        aiMessageBubble.classList.remove('items-center');
-                                        isFirstChunk = false;
-                                    }
-                                    currentAiResponseText += textPart;
-                                    aiMessageBubble.textContent = currentAiResponseText;
-                                    logElement.scrollTop = logElement.scrollHeight;
-                                }
-                            } catch (e) {
-                                log("Could not parse JSON chunk:", jsonStr, e);
-                            }
-                        }
-                    }
-                }
-                
-                if (isFirstChunk) { 
-                    currentAiResponseText = "AIからの応答がありませんでした。";
-                    aiMessageBubble.textContent = currentAiResponseText;
+                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                    fullResponse = result.candidates[0].content.parts[0].text;
+                    aiMessageBubble.textContent = fullResponse;
                     aiMessageBubble.classList.remove('items-center');
+                } else {
+                     throw new Error("Invalid response structure from API.");
                 }
+
+                log("Response received successfully.");
 
             } catch (e) {
                 error("Streaming API error:", e);
-                if (e.name === 'AbortError') {
-                     currentAiResponseText = "AIからの応答がタイムアウトしました。";
-                } else {
-                     currentAiResponseText = `エラーが発生しました: ${e.message}`;
-                }
-                aiMessageBubble.textContent = currentAiResponseText;
+                fullResponse = `エラーが発生しました: ${e.message}`;
+                aiMessageBubble.textContent = fullResponse;
                 aiMessageBubble.classList.remove('bg-gray-200', 'text-gray-800', 'items-center');
                 aiMessageBubble.classList.add('bg-red-200', 'text-red-800');
-            } 
-            return currentAiResponseText;
+            }
+            return fullResponse;
         }
+
         
         async function getAIAudioResponse(textToSpeak) {
              const payload = {
@@ -1300,4 +1256,4 @@
         }
     </script>
 </body>
-</ht
+</html>
