@@ -79,7 +79,7 @@
                 <div id="screen-loading" class="flex items-center justify-center h-full">
                     <div class="text-center">
                         <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div>
-                        <p class="mt-4 text-gray-500">データを読み込んでいます...</p>
+                        <p class="mt-4 text-gray-500">アプリを起動しています...</p>
                     </div>
                 </div>
                 
@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.10";
+        const APP_VERSION = "3.35.11";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -174,7 +174,7 @@
         };
         
         // --- 初期化 ---
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log(`Initializing app v${APP_VERSION}...`);
             dom.version.textContent = `v${APP_VERSION}`;
 
@@ -186,6 +186,8 @@
             initializeSpeechRecognition();
             initializeAudio();
             
+            showScreen('loading');
+
             if (!isFirebaseInitialized) {
                 renderAuthScreen();
                 showScreen('auth');
@@ -195,11 +197,21 @@
                     signinBtn.textContent = 'バックエンド接続エラー';
                 }
             } else {
-                setupAuthObserver();
-                showScreen('loading');
+                try {
+                    // Wait for any redirect operations to complete before setting up the auth state listener.
+                    // This is crucial for mobile redirect sign-in.
+                    await getRedirectResult(auth);
+                    setupAuthObserver();
+                } catch (error) {
+                    console.error("Error processing redirect result:", error);
+                    renderAuthScreen();
+                    showScreen('auth');
+                    const authErrorEl = document.getElementById('auth-error');
+                    if(authErrorEl) authErrorEl.textContent = `認証エラー: ${error.message}`;
+                }
             }
             
-            if (!apiKey && isFirebaseInitialized) {
+            if (!apiKey && isFirebaseInitialized && !auth.currentUser) {
                 showModal('apiKey');
             }
         });
@@ -228,12 +240,6 @@
 
         function setupAuthObserver() {
             if (!isFirebaseInitialized) return;
-            
-            getRedirectResult(auth).catch(error => {
-                console.error("Error handling redirect result:", error);
-                const authErrorEl = document.getElementById('auth-error');
-                if(authErrorEl) authErrorEl.textContent = `リダイレクトエラー: ${error.message}`;
-            });
 
             onAuthStateChanged(auth, user => {
                 if (user) {
@@ -257,7 +263,6 @@
             showScreen('loading');
             updateHeader();
             loadAllUserData();
-            // Don't wait for data to render main menu, snapshot will update it
             renderMainMenu();
             showScreen('mainMenu');
         }
@@ -268,7 +273,6 @@
             questionStats.clear();
             customProblemSets = [];
             
-            // Unsubscribe from old listeners
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
 
@@ -280,7 +284,6 @@
         // --- データ管理 (Firestore) ---
         function loadAllUserData() {
             if (!currentUser) return;
-            // Clear old listeners before setting new ones
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
             
@@ -413,7 +416,7 @@
                  if(modalId === 'deleteConfirm') {
                     document.getElementById('delete-confirm-message').textContent = options.message;
                     const confirmBtn = document.getElementById('delete-confirm-btn');
-                    const newConfirmBtn = confirmBtn.cloneNode(true); // Re-clone to remove old listeners
+                    const newConfirmBtn = confirmBtn.cloneNode(true); 
                     newConfirmBtn.textContent = "削除"
                     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
                     newConfirmBtn.addEventListener('click', options.onConfirm);
@@ -542,7 +545,9 @@
                     <div class="relative">
                         <textarea id="user-answer" class="w-full p-3 pr-12 border rounded-lg bg-gray-50 dark:bg-gray-900" rows="4" placeholder="英語で回答を入力...">${userAnswer}</textarea>
                         <button id="mic-btn" class="absolute top-3 right-3 p-2 text-gray-500 hover:text-blue-600">
-                           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg>
+                           <span class="relative flex h-6 w-6">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-5.445-5.921V4a5 5 0 00-10 0v.08A6.001 6.001 0 019 14.93V17a1 1 0 102 0v-2.07z" clip-rule="evenodd"></path></svg>
+                           </span>
                         </button>
                     </div>
                      <p id="mic-status" class="text-xs h-4 mt-1 text-center"></p>
@@ -929,7 +934,11 @@
             } catch (error) {
                 console.error("Streaming API error:", error);
                 currentAiResponseText = "エラーが発生しました。もう一度試してください。";
-                logElement.lastChild.querySelector('span').textContent = currentAiResponseText;
+                const errorContainer = document.createElement('div');
+                errorContainer.className = 'text-left';
+                errorContainer.innerHTML = `<span class="inline-block bg-red-200 text-red-800 rounded-lg px-3 py-2 text-sm">${currentAiResponseText}</span>`;
+                logElement.appendChild(errorContainer);
+                logElement.scrollTop = logElement.scrollHeight;
             } finally {
                 isStreamingAiResponse = false;
                 return currentAiResponseText;
