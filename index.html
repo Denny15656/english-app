@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.14";
+        const APP_VERSION = "3.35.15";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -199,23 +199,11 @@
                 return;
             }
             
-            // This setup robustly handles both direct loads and redirects.
-            // getRedirectResult resolves, then onAuthStateChanged provides the user.
             getRedirectResult(auth)
-                .then((result) => {
-                    if (result) {
-                        log("Redirect result successfully processed for user:", result.user.displayName);
-                    }
-                    // Setup observer AFTER redirect is handled.
-                    setupAuthObserver();
-                })
                 .catch((e) => {
-                    error("Critical error processing redirect result:", e);
-                    renderAuthScreen();
-                    showScreen('auth');
-                    const authErrorEl = document.getElementById('auth-error');
-                    if(authErrorEl) authErrorEl.textContent = `認証エラー: ${e.code || e.message}`;
-                    // Still set up observer to handle non-redirect logins.
+                    error("Error processing redirect result:", e);
+                })
+                .finally(() => {
                     setupAuthObserver();
                 });
         });
@@ -245,13 +233,20 @@
         }
 
         function setupAuthObserver() {
-            log("Setting up auth state observer.");
-            onAuthStateChanged(auth, user => {
-                log("Auth state changed. User:", user ? user.uid : null);
+            onAuthStateChanged(auth, async (user) => {
+                log("Auth state changed. User:", user ? user.uid : 'null');
                 if (user) {
+                    if (currentUser && currentUser.uid === user.uid) {
+                        log("Auth state for current user confirmed. No UI change needed.");
+                        return;
+                    }
                     currentUser = user;
-                    onLogin();
+                    await onLogin();
                 } else {
+                    if (currentUser === null) {
+                        log("User is already logged out. No UI change needed.");
+                        return;
+                    }
                     currentUser = null;
                     onLogout();
                 }
@@ -261,30 +256,31 @@
         // --- 認証フロー ---
         async function onLogin() {
             try {
-                log(`User ${currentUser.uid} logged in.`);
-                if (!apiKey) {
-                    log("API key not found, showing modal.");
-                    showModal('apiKey');
-                    if(dom.screens.auth.classList.contains('hidden')){
-                         renderAuthScreen();
-                         showScreen('auth');
-                    }
-                    return;
-                }
+                log(`User ${currentUser.uid} logged in. Starting login process...`);
                 showScreen('loading');
                 updateHeader();
-                await loadAllUserData(); // Wait for initial data load
+
+                if (!apiKey) {
+                    log("API key not found, showing modal and auth screen.");
+                    renderAuthScreen();
+                    showScreen('auth');
+                    showModal('apiKey');
+                    return;
+                }
+                
+                await loadAllUserData(); 
                 renderMainMenu();
                 showScreen('mainMenu');
                 log("Login process complete, main menu displayed.");
             } catch (e) {
                 error("Error during login process:", e);
-                showScreen('auth'); // Fallback to auth screen on error
+                renderAuthScreen();
+                showScreen('auth'); 
             }
         }
 
         function onLogout() {
-            log("User signed out or session ended.");
+            log("Starting logout process...");
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
             questionStats.clear();
@@ -293,43 +289,54 @@
             updateHeader();
             renderAuthScreen();
             showScreen('auth');
+            log("Logout process complete.");
         }
 
         // --- データ管理 (Firestore) ---
         async function loadAllUserData() {
             if (!currentUser) return;
             log("Fetching initial user data...");
-
+            
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
             
-            try {
+            return new Promise((resolve, reject) => {
                 const statsQuery = query(collection(db, `users/${currentUser.uid}/questionStats`));
                 const setsQuery = query(collection(db, `users/${currentUser.uid}/problemSets`));
+                const historyQuery = query(collection(db, `users/${currentUser.uid}/history`));
 
-                const [statsSnapshot, setsSnapshot] = await Promise.all([
-                    getDocs(statsQuery),
-                    getDocs(setsQuery),
-                ]);
+                let statsLoaded = false, setsLoaded = false, historyLoaded = false;
+                
+                const checkAllLoaded = () => {
+                    if(statsLoaded && setsLoaded && historyLoaded) {
+                        log("Initial data fetch complete.");
+                        attachRealtimeListeners();
+                        resolve();
+                    }
+                };
+                
+                getDocs(statsQuery).then(snapshot => {
+                    questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
+                    statsLoaded = true;
+                    checkAllLoaded();
+                }).catch(reject);
 
-                questionStats = new Map(statsSnapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
-                customProblemSets = setsSnapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                getDocs(setsQuery).then(snapshot => {
+                    customProblemSets = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                    allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+                    customProblemSets.forEach(set => {
+                        if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
+                    });
+                    setsLoaded = true;
+                    checkAllLoaded();
+                }).catch(reject);
 
-                allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
-                customProblemSets.forEach(set => {
-                    if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
-                });
-
-                log("Initial data fetched successfully.");
-            } catch (e) {
-                error("Failed to fetch initial user data:", e);
-                // Proceed with empty maps, onSnapshot will hopefully catch up
-                questionStats = new Map();
-                customProblemSets = [];
-            }
-            
-            // Attach real-time listeners AFTER initial fetch
-            attachRealtimeListeners();
+                getDocs(historyQuery).then(snapshot => {
+                    allHistory = snapshot.docs.map(d => ({ ...d.data(), id: d.id}));
+                    historyLoaded = true;
+                    checkAllLoaded();
+                }).catch(reject);
+            });
         }
         
         function attachRealtimeListeners() {
@@ -1246,4 +1253,4 @@
         }
     </script>
 </body>
-</html>
+</ht
