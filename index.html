@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.17";
+        const APP_VERSION = "3.35.18";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -965,12 +965,21 @@
         }
 
         async function streamAIConversationResponse(history, logElement) {
-             isStreamingAiResponse = true;
-             let currentAiResponseText = "";
-             const payload = { contents: history };
-             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
+            isStreamingAiResponse = true;
+            let currentAiResponseText = "";
+            const payload = { contents: history };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:streamGenerateContent?key=${apiKey}`;
 
-             try {
+            const aiMessageContainer = document.createElement('div');
+            aiMessageContainer.className = 'text-left';
+            const aiMessageBubble = document.createElement('span');
+            aiMessageBubble.className = 'inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm min-w-[2rem] min-h-[2rem] flex items-center';
+            aiMessageBubble.innerHTML = '<div class="loader w-4 h-4 border-2 border-gray-400"></div>';
+            aiMessageContainer.appendChild(aiMessageBubble);
+            logElement.appendChild(aiMessageContainer);
+            logElement.scrollTop = logElement.scrollHeight;
+
+            try {
                 log("Streaming AI response from Gemini...");
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API request failed with status ${response.status} ${await response.text()}`);
@@ -978,13 +987,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
-
-                const aiMessageContainer = document.createElement('div');
-                aiMessageContainer.className = 'text-left';
-                const aiMessageBubble = document.createElement('span');
-                aiMessageBubble.className = 'inline-block bg-gray-200 text-gray-800 rounded-lg px-3 py-2 text-sm';
-                aiMessageContainer.appendChild(aiMessageBubble);
-                logElement.appendChild(aiMessageContainer);
+                let isFirstChunk = true;
                 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -996,26 +999,39 @@
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
-                            const jsonStr = line.substring(6);
+                            const jsonStr = line.substring(6).trim();
+                            if (!jsonStr) continue;
+
                             try {
                                 const chunk = JSON.parse(jsonStr);
-                                const textPart = chunk.candidates[0]?.content?.parts[0]?.text || '';
-                                currentAiResponseText += textPart;
-                                aiMessageBubble.textContent = currentAiResponseText;
-                                logElement.scrollTop = logElement.scrollHeight;
-                            } catch (e) { /* Ignore parsing errors for incomplete JSON */ }
+                                const textPart = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                                if (textPart) {
+                                    if (isFirstChunk) {
+                                        aiMessageBubble.innerHTML = ''; // Clear loader
+                                        aiMessageBubble.classList.remove('items-center');
+                                        isFirstChunk = false;
+                                    }
+                                    currentAiResponseText += textPart;
+                                    aiMessageBubble.textContent = currentAiResponseText;
+                                    logElement.scrollTop = logElement.scrollHeight;
+                                }
+                            } catch (e) {
+                                error("JSON parsing error in stream. String:", jsonStr, "Error:", e);
+                            }
                         }
                     }
                 }
                 log("Streaming complete.");
+                if (isFirstChunk) { // Stream ended but no text was received
+                    aiMessageBubble.textContent = "AIからの応答がありませんでした。";
+                    aiMessageBubble.classList.remove('items-center');
+                }
             } catch (e) {
                 error("Streaming API error:", e);
                 currentAiResponseText = "エラーが発生しました。もう一度試してください。";
-                const errorContainer = document.createElement('div');
-                errorContainer.className = 'text-left';
-                errorContainer.innerHTML = `<span class="inline-block bg-red-200 text-red-800 rounded-lg px-3 py-2 text-sm">${currentAiResponseText}</span>`;
-                logElement.appendChild(errorContainer);
-                logElement.scrollTop = logElement.scrollHeight;
+                aiMessageBubble.textContent = currentAiResponseText;
+                aiMessageBubble.classList.remove('bg-gray-200', 'text-gray-800', 'items-center');
+                aiMessageBubble.classList.add('bg-red-200', 'text-red-800');
             } finally {
                 isStreamingAiResponse = false;
                 return currentAiResponseText;
