@@ -431,7 +431,18 @@
 
         function initFirebase() {
             try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                // The execution environment is expected to provide __firebase_config
+                if (typeof __firebase_config === 'undefined' || !__firebase_config.trim()) {
+                    throw new Error("Firebase configuration variable (__firebase_config) is not available or is empty.");
+                }
+
+                const firebaseConfig = JSON.parse(__firebase_config);
+
+                // Basic validation of the parsed config object
+                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+                    throw new Error("The provided Firebase configuration is missing essential properties like apiKey or projectId.");
+                }
+
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
@@ -439,7 +450,18 @@
                 setupAuthObserver();
             } catch (error) {
                 console.error("Firebaseの初期化に失敗しました:", error);
-                alert("アプリの初期化に失敗しました。設定を確認してください。");
+                const loadingScreen = document.getElementById('screen-loading');
+                if (loadingScreen) {
+                    loadingScreen.innerHTML = `
+                        <div class="text-center p-6 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-lg max-w-lg mx-auto">
+                            <h2 class="text-xl font-bold mb-2">アプリの初期化エラー</h2>
+                            <p>アプリケーションの起動に必要な設定を読み込めませんでした。これにより、アプリの機能が利用できません。</p>
+                            <p class="mt-4 text-sm bg-red-100 dark:bg-red-800/30 p-2 rounded">
+                                <strong>技術的な詳細:</strong> ${error.message}
+                            </p>
+                        </div>
+                    `;
+                }
             }
         }
 
