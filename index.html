@@ -117,7 +117,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.13";
+        const APP_VERSION = "3.35.14";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -136,7 +136,6 @@
         let currentUser = null;
         let apiKey = null;
         let isFirebaseInitialized = false;
-        let isAuthCheckComplete = false;
         
         let questionStats = new Map();
         let allHistory = [];
@@ -179,7 +178,7 @@
         };
         
         // --- 初期化 ---
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             log("DOM content loaded. Initializing...");
             dom.version.textContent = `v${APP_VERSION}`;
 
@@ -197,28 +196,28 @@
                 error("Firebase initialization failed.");
                 renderAuthScreen();
                 showScreen('auth');
-                const signinBtn = document.getElementById('signin-btn');
-                if(signinBtn) {
-                    signinBtn.disabled = true;
-                    signinBtn.textContent = 'バックエンド接続エラー';
-                }
                 return;
             }
             
-            try {
-                log("Checking for redirect result...");
-                const result = await getRedirectResult(auth);
-                if (result) {
-                    log("Redirect result successfully processed for user:", result.user.displayName);
-                }
-                setupAuthObserver();
-            } catch (e) {
-                error("Critical error processing redirect result:", e);
-                renderAuthScreen();
-                showScreen('auth');
-                const authErrorEl = document.getElementById('auth-error');
-                if(authErrorEl) authErrorEl.textContent = `認証エラー: ${e.code || e.message}`;
-            }
+            // This setup robustly handles both direct loads and redirects.
+            // getRedirectResult resolves, then onAuthStateChanged provides the user.
+            getRedirectResult(auth)
+                .then((result) => {
+                    if (result) {
+                        log("Redirect result successfully processed for user:", result.user.displayName);
+                    }
+                    // Setup observer AFTER redirect is handled.
+                    setupAuthObserver();
+                })
+                .catch((e) => {
+                    error("Critical error processing redirect result:", e);
+                    renderAuthScreen();
+                    showScreen('auth');
+                    const authErrorEl = document.getElementById('auth-error');
+                    if(authErrorEl) authErrorEl.textContent = `認証エラー: ${e.code || e.message}`;
+                    // Still set up observer to handle non-redirect logins.
+                    setupAuthObserver();
+                });
         });
 
 
@@ -250,16 +249,12 @@
             onAuthStateChanged(auth, user => {
                 log("Auth state changed. User:", user ? user.uid : null);
                 if (user) {
-                    if (currentUser?.uid === user.uid && isAuthCheckComplete) {
-                        log("Auth state change is for the same user, ignoring.");
-                        return;
-                    }
                     currentUser = user;
                     onLogin();
                 } else {
+                    currentUser = null;
                     onLogout();
                 }
-                isAuthCheckComplete = true;
             });
         }
         
@@ -278,23 +273,23 @@
                 }
                 showScreen('loading');
                 updateHeader();
-                await loadAllUserData();
+                await loadAllUserData(); // Wait for initial data load
                 renderMainMenu();
                 showScreen('mainMenu');
+                log("Login process complete, main menu displayed.");
             } catch (e) {
                 error("Error during login process:", e);
+                showScreen('auth'); // Fallback to auth screen on error
             }
         }
 
         function onLogout() {
-            if(currentUser) log("User signed out.");
-            currentUser = null;
+            log("User signed out or session ended.");
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
             questionStats.clear();
             customProblemSets = [];
             
-            unsubscribeListeners.forEach(unsub => unsub());
-            unsubscribeListeners = [];
-
             updateHeader();
             renderAuthScreen();
             showScreen('auth');
@@ -302,15 +297,48 @@
 
         // --- データ管理 (Firestore) ---
         async function loadAllUserData() {
-            if (!currentUser) return Promise.resolve();
-            log("Loading all user data...");
+            if (!currentUser) return;
+            log("Fetching initial user data...");
+
             unsubscribeListeners.forEach(unsub => unsub());
             unsubscribeListeners = [];
             
-            const statsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
+            try {
+                const statsQuery = query(collection(db, `users/${currentUser.uid}/questionStats`));
+                const setsQuery = query(collection(db, `users/${currentUser.uid}/problemSets`));
+
+                const [statsSnapshot, setsSnapshot] = await Promise.all([
+                    getDocs(statsQuery),
+                    getDocs(setsQuery),
+                ]);
+
+                questionStats = new Map(statsSnapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
+                customProblemSets = setsSnapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+
+                allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
+                customProblemSets.forEach(set => {
+                    if (set.sentences) set.sentences.forEach(s => allKnownSentences.set(s.ja, s));
+                });
+
+                log("Initial data fetched successfully.");
+            } catch (e) {
+                error("Failed to fetch initial user data:", e);
+                // Proceed with empty maps, onSnapshot will hopefully catch up
+                questionStats = new Map();
+                customProblemSets = [];
+            }
+            
+            // Attach real-time listeners AFTER initial fetch
+            attachRealtimeListeners();
+        }
+        
+        function attachRealtimeListeners() {
+            if (!currentUser) return;
+            log("Attaching realtime listeners...");
+             const statsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/questionStats`), snapshot => {
                 questionStats = new Map(snapshot.docs.map(d => [d.data().ja, { ...d.data(), id: d.id }]));
                 if (!dom.screens.mainMenu.classList.contains('hidden')) renderMainMenu();
-            }, e => error("Error fetching question stats:", e));
+            }, e => error("Error in question stats snapshot:", e));
 
             const setsUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/problemSets`), snapshot => {
                 customProblemSets = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
@@ -320,15 +348,14 @@
                 });
                 if (!dom.screens.mainMenu.classList.contains('hidden')) renderMainMenu();
                 if (!dom.screens.customSets.classList.contains('hidden')) renderCustomSetsScreen();
-            }, e => error("Error fetching custom sets:", e));
+            }, e => error("Error in custom sets snapshot:", e));
             
             const historyUnsub = onSnapshot(collection(db, `users/${currentUser.uid}/history`), snapshot => {
                 allHistory = snapshot.docs.map(d => ({ ...d.data(), id: d.id}));
                 if (!dom.screens.history.classList.contains('hidden')) renderHistoryScreen();
-            }, e => error("Error fetching history:", e));
-
+            }, e => error("Error in history snapshot:", e));
+            
             unsubscribeListeners.push(statsUnsub, setsUnsub, historyUnsub);
-            log("User data listeners attached.");
         }
         
         async function updateQuestionSRS(question, isCorrect) {
