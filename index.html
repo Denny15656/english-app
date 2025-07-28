@@ -53,6 +53,9 @@
             70% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
             100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
         }
+        .debug-log {
+            @apply mt-4 p-4 bg-gray-800 text-white rounded-lg text-xs font-mono whitespace-pre-wrap break-all;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased">
@@ -117,7 +120,7 @@
         import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, getDoc, Timestamp, query, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Version ---
-        const APP_VERSION = "3.35.26";
+        const APP_VERSION = "3.35.27";
 
         // --- 定数 ---
         const MASTERED_LEVEL = 5;
@@ -142,7 +145,7 @@
         let customProblemSets = [];
         let allKnownSentences = new Map(defaultSentences.map(s => [s.ja, s]));
         let activeQuiz = { sentences: [], type: null, index: 0 };
-        let settings = { maxQuestionsPerSession: 20, questionOrder: 'in-order', autoReadAloud: true };
+        let settings = { maxQuestionsPerSession: 20, questionOrder: 'in-order', autoReadAloud: true, debugMode: false };
         
         let recognition = null;
         let isRecognizing = false;
@@ -656,6 +659,7 @@
                 <div class="mt-4 text-center">
                     <button id="next-question-btn" class="btn btn-primary">次の問題へ</button>
                 </div>
+                <div id="debug-area" class="hidden"></div>
             `;
             
             conversationContext = {
@@ -1140,7 +1144,7 @@
                     hideModal('settings');
                     showModal('apiKey');
                 }
-                if(e.target.id === 'max-questions-input' || e.target.id === 'question-order-select' || e.target.id === 'auto-read-aloud-toggle') {
+                if(e.target.id === 'max-questions-input' || e.target.id === 'question-order-select' || e.target.id === 'auto-read-aloud-toggle' || e.target.id === 'debug-mode-toggle') {
                     saveSettings();
                 }
             });
@@ -1191,14 +1195,16 @@
         function loadSettings() {
             const saved = localStorage.getItem('englishAppSettings');
             if (saved) {
-                settings = JSON.parse(saved);
+                settings = { ...settings, ...JSON.parse(saved) };
             }
         }
         function saveSettings() {
             settings.maxQuestionsPerSession = document.getElementById('max-questions-input').value;
             settings.questionOrder = document.getElementById('question-order-select').value;
             settings.autoReadAloud = document.getElementById('auto-read-aloud-toggle').checked;
+            settings.debugMode = document.getElementById('debug-mode-toggle').checked;
             localStorage.setItem('englishAppSettings', JSON.stringify(settings));
+            log("Settings saved:", settings);
         }
 
         // --- Modal Templates ---
@@ -1237,6 +1243,11 @@
                          <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">APIキーの再設定</label>
                             <button id="reset-api-key-btn" class="btn btn-secondary mt-1">APIキーを再設定</button>
+                        </div>
+                         <hr class="dark:border-gray-600">
+                         <div class="flex items-center">
+                            <input type="checkbox" id="debug-mode-toggle" class="h-4 w-4 rounded" ${settings.debugMode ? 'checked' : ''}>
+                            <label for="debug-mode-toggle" class="ml-2 block text-sm text-gray-900 dark:text-gray-200">デバッグモード</label>
                         </div>
                     </div>
                     <div class="flex justify-end mt-6">
