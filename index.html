@@ -340,8 +340,8 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, serverTimestamp, writeBatch, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, serverTimestamp, writeBatch, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- 定数と設定 ---
         const MASTERED_LEVEL = 6;
@@ -444,6 +444,22 @@
         }
 
         function setupAuthObserver() {
+             // Handle the result of the redirect sign-in
+            getRedirectResult(auth)
+                .then((result) => {
+                    if (result) {
+                        // This confirms the redirect result has been handled.
+                        // onAuthStateChanged will now fire with the user.
+                        console.log("Redirect result successfully handled.", result.user);
+                    }
+                }).catch((error) => {
+                    // Handle Errors here.
+                    console.error("Error handling redirect result:", error);
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    document.getElementById('auth-error').textContent = `エラー: ${errorMessage} (${errorCode})`;
+                });
+
              onAuthStateChanged(auth, user => {
                 if (user) {
                     // ユーザーがログインしている
@@ -502,7 +518,7 @@
                 .catch(error => {
                     console.error("Sign in error:", error);
                     let message = "サインインに失敗しました。";
-                    if (error.code === 'auth/popup-closed-by-user') {
+                    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
                         message = "認証がキャンセルされました。";
                     } else if (error.code === 'auth/network-request-failed') {
                         message = "ネットワーク接続を確認してください。";
